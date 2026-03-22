@@ -1,9 +1,9 @@
 package com.example.Backend.config;
 
-import com.example.Backend.security.JwtFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import com.example.Backend.security.JwtFilter;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,10 +20,11 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable()) // tắt CSRF
                 .authorizeHttpRequests(auth -> auth
-                                .requestMatchers("/api/auth/**", "/api/public").permitAll()
-//                        .requestMatchers("/api/me").hasRole("ADMIN")
-                                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                                .anyRequest().authenticated()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() //cho phép swagger
+                        .requestMatchers("/api/auth/**", "/api/public").permitAll()
+                        .requestMatchers("/api/me").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .anyRequest().authenticated()
                 ).addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
