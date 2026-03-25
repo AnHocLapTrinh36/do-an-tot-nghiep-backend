@@ -1,6 +1,8 @@
 package com.example.Backend.entity;
+
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -13,7 +15,7 @@ import java.time.LocalDateTime;
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
     @Column(nullable = false, unique = true)
     private String email;
@@ -27,8 +29,14 @@ public class User {
     @Enumerated(EnumType.STRING)
     private RoleType role;
 
+    @Enumerated(EnumType.STRING)
+    private Provider provider;
+
+    @Column(name = "provider_id")
+    private String providerId;
+
     @Column(name = "is_active")
-    private Boolean isActive ;
+    private Boolean isActive;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -36,7 +44,7 @@ public class User {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
-        if(isActive==null)
-            isActive=true;
+        if (isActive == null)
+            isActive = true;
     }
 }

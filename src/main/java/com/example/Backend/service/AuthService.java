@@ -1,10 +1,12 @@
 package com.example.Backend.service;
 
 import com.example.Backend.dto.Auth.LoginRequest;
+import com.example.Backend.dto.User.UserReponse;
 import com.example.Backend.dto.User.UserRequest;
 import com.example.Backend.entity.RoleType;
 import com.example.Backend.entity.User;
-import com.example.Backend.repository.User.UserRepository;
+import com.example.Backend.mapper.UserMapper;
+import com.example.Backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,8 +17,9 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final UserMapper userMapper;
 
-    public User createUser(UserRequest request) {
+    public UserReponse createUser(UserRequest request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Lỗi: Email này đã được sử dụng");
         }
@@ -26,7 +29,8 @@ public class AuthService {
         newUser.setEmail(request.getEmail());
         newUser.setIsActive(true);
         newUser.setFullName(request.getFullName());
-        return userRepository.save(newUser);
+        User saveUser = userRepository.save(newUser);
+        return userMapper.toResponse(saveUser);
     }
 
     public String login(LoginRequest request) {

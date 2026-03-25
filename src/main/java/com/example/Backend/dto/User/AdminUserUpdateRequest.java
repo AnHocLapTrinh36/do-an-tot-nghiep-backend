@@ -12,6 +12,7 @@ public class AdminUserUpdateRequest {
     @NotBlank(message = "Email không được để trống")
     @Email(message = "Email không đúng định dạng")
     private String email;
+
     @Size(min = 6, message = "Mật khẩu mới phải từ 6 ký tự")
     private String password;
 

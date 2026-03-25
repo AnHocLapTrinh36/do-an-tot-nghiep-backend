@@ -5,7 +5,7 @@ import com.example.Backend.dto.User.AdminUserUpdateRequest;
 import com.example.Backend.dto.User.UserReponse;
 import com.example.Backend.entity.User;
 import com.example.Backend.mapper.UserMapper;
-import com.example.Backend.repository.User.UserRepository;
+import com.example.Backend.repository.UserRepository;
 import com.example.Backend.service.User.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,14 +22,15 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
 
     @Override
-    public User createUser(AdminUserRequest request) {
+    public UserReponse createUser(AdminUserRequest request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Lỗi: Email này đã được sử dụng");
         }
         User newUser = userMapper.toEntity(request);
         newUser.setPassword(passwordEncoder.encode(request.getPassword()));
         newUser.setIsActive(true);
-        return userRepository.save(newUser);
+        User saveUser = userRepository.save(newUser);
+        return userMapper.toResponse(saveUser);
     }
 
     @Override
@@ -39,7 +40,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User updateUser(Integer id, AdminUserUpdateRequest updateDto) {
+    public User updateUser(Long id, AdminUserUpdateRequest updateDto) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         if (!user.getEmail().equals(updateDto.getEmail())) {
@@ -58,7 +59,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void deleteUser(Integer id) {
+    public void deleteUser(Long id) {
         if (!userRepository.existsById(id))
             throw new RuntimeException("User không tồn tại để xóa");
         userRepository.deleteById(id);

@@ -26,18 +26,18 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<User> createUser(@Valid @RequestBody AdminUserRequest request) {
-        User createdUser = userService.createUser(request);
+    public ResponseEntity<UserReponse> createUser(@Valid @RequestBody AdminUserRequest request) {
+        UserReponse createdUser = userService.createUser(request);
         return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Integer id, @Valid @RequestBody AdminUserUpdateRequest request) {
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @Valid @RequestBody AdminUserUpdateRequest request) {
         return ResponseEntity.ok(userService.updateUser(id, request));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteUser(@PathVariable Integer id) {
+    public ResponseEntity<String> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.ok("Xóa người dùng thành công");
     }

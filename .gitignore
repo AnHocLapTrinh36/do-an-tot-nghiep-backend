@@ -31,3 +31,13 @@ build/
 
 ### VS Code ###
 .vscode/
+--------------------------------------------
+spring.application.name=Backend
+spring.datasource.url=jdbc:sqlserver://localhost\\NGOCAN;databaseName=school;encrypt=true;trustServerCertificate=true
+spring.datasource.username=school_user
+spring.datasource.password=123456
+spring.datasource.driver-class-name=com.microsoft.sqlserver.jdbc.SQLServerDriver
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+---------------------------------------------
