@@ -1,28 +1,32 @@
 package com.example.Backend.mapper;
 
-import com.example.Backend.dto.Teacher.TeacherRequest;
-import com.example.Backend.dto.Teacher.TeacherResponse;
-import com.example.Backend.dto.Teacher.TeacherUpdateRequest;
+import com.example.Backend.dto.request.RegisterRequest;
+import com.example.Backend.dto.response.TeacherResponse;
 import com.example.Backend.entity.Teacher;
+import com.example.Backend.entity.User;
 import org.mapstruct.*;
 
 import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface TeacherMapper {
-    // bên teacherRequest chứa các trường user, nhưng không có trường nào tên là user nên dòng này giúp không được động trường user
-    @Mapping(target = "user", ignore = true)
-    Teacher toEntity(TeacherRequest request);
+    // 1. Dùng khi Register
+    @Mapping(target = "user", source = "user")
+    @Mapping(target = "employeeCode", ignore = true)
+    Teacher toEntity(RegisterRequest request, User user);
 
-    @Mapping(source = "user.id", target = "userId")
-    @Mapping(source = "user.email", target = "email")
-    @Mapping(source = "user.fullName", target = "fullName")
+    // 2. Dùng khi Update
+//    @Mapping(target = "id", ignore = true)
+//    @Mapping(target = "user", ignore = true)        // không cho phép thay đổi user
+//    void updateEntity(@MappingTarget Teacher teacher, TeacherUpdateRequest request);
+
+    // 3. Map từ Entity → Response (dùng để trả về API)
+    @Mapping(target = "userId", source = "user.id")
+    @Mapping(target = "email", source = "user.email")
+    @Mapping(target = "fullName", source = "user.fullName")
     TeacherResponse toResponse(Teacher teacher);
 
+    // Nếu cần map List
     List<TeacherResponse> toResponseList(List<Teacher> teachers);
-
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    @Mapping(target = "user", ignore = true)
-    void updateTeacherFromUpdateDto(TeacherUpdateRequest request, @MappingTarget Teacher teacher);
 
 }

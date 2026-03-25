@@ -15,8 +15,14 @@ public class Teacher {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @OneToOne(cascade = CascadeType.REMOVE)
-    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.REMOVE, optional = false)
+    @JoinColumn(
+            name = "user_id",
+            referencedColumnName = "id",
+            nullable = false,
+            unique = true,
+            foreignKey = @ForeignKey(name = "fk_teacher_user")
+    )
     private User user;
     @Column(name = "employee_code", unique = true)
     private String employeeCode;

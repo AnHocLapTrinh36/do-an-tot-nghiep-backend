@@ -1,36 +1,61 @@
 package com.example.Backend.exception;
 
-import com.example.Backend.dto.ResponseApi.ApiResponse;
+
+import com.example.Backend.dto.apiResponse.ApiResponse;
+import io.swagger.v3.oas.annotations.Hidden;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
+@Hidden //bỏ qua swagger
 public class GlobalException {
-    // băts loi validate
+
+    // Lỗi hệ thống chung
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiResponse<Object>> handleGlobalException(Exception ex) {
+        ApiResponse<Object> response = ApiResponse.error(
+                "Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau!",
+                ex.getMessage(),                    // chi tiết lỗi nằm trong data
+                HttpStatus.INTERNAL_SERVER_ERROR.value()
+        );
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+
+    // Lỗi validation
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse> handlingValidation(MethodArgumentNotValidException exception) {
-        String enumKey = exception.getBindingResult().getFieldError().getDefaultMessage();
+    public ResponseEntity<ApiResponse<Object>> handleValidationException(MethodArgumentNotValidException ex) {
 
-        ApiResponse apiResponse = ApiResponse.builder()
-                .code(400)
-                .message(enumKey)
-                .build();
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach(error -> {
+            String fieldName = ((FieldError) error).getField();
+            String errorMsg = error.getDefaultMessage();
+            errors.put(fieldName, errorMsg);
+        });
 
-        return ResponseEntity.badRequest().body(apiResponse);
+        ApiResponse<Object> response = ApiResponse.error(
+                "Dữ liệu không hợp lệ",
+                errors,                             // lỗi nằm trong data
+                HttpStatus.BAD_REQUEST.value()
+        );
+
+        return ResponseEntity.badRequest().body(response);
     }
 
-    // Bắt các lỗi RuntimeException
-    @ExceptionHandler(value = RuntimeException.class)
-    public ResponseEntity<ApiResponse> handlingRuntimeException(RuntimeException exception) {
-        ApiResponse apiResponse = ApiResponse.builder()
-                .code(400)
-                .message(exception.getMessage())
-                .build();
-        return ResponseEntity.badRequest().body(apiResponse);
+    // Lỗi không tìm thấy
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiResponse<Object>> handleResourceNotFound(ResourceNotFoundException ex) {
+        ApiResponse<Object> response = ApiResponse.error(
+                ex.getMessage(),
+                null,
+                HttpStatus.NOT_FOUND.value()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
-
 }

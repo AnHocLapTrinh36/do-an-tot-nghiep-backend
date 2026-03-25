@@ -1,13 +1,9 @@
 package com.example.Backend.mapper;
 
-import com.example.Backend.dto.User.AdminUserRequest;
-import com.example.Backend.dto.User.AdminUserUpdateRequest;
-import com.example.Backend.dto.User.UserReponse;
+import com.example.Backend.dto.request.RegisterRequest;
+import com.example.Backend.dto.response.RegisterResponse;
 import com.example.Backend.entity.User;
-import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
-import org.mapstruct.MappingTarget;
-import org.mapstruct.NullValuePropertyMappingStrategy;
 
 import java.util.List;
 
@@ -15,12 +11,12 @@ import java.util.List;
 public interface UserMapper {
 
 
-    User toEntity(AdminUserRequest request);
+    User toEntity(RegisterRequest request);
+    RegisterResponse toDto(User user);
 
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    void updateEntityFromDto(AdminUserUpdateRequest dto, @MappingTarget User entity);
+//    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+//    void updateEntityFromDto(AdminUserUpdateRequest dto, @MappingTarget User entity);
+//    UserReponse toResponse(User user);
 
-    UserReponse toResponse(User user);
-
-    List<UserReponse> toResponseList(List<User> users);
+    List<RegisterResponse> toResponseList(List<User> users);
 }

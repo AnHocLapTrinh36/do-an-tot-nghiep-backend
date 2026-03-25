@@ -2,6 +2,7 @@ package com.example.Backend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -17,34 +18,41 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 255)
     private String email;
 
-    @Column(nullable = false)
-    private String password;
+    @Column(name = "password", length = 255)
+    private String password;  // NULL nếu chỉ GOOGLE
 
-    @Column(name = "full_name")
+    @Column(nullable = false, length = 255)
     private String fullName;
 
-    @Enumerated(EnumType.STRING)
-    private RoleType role;
+    @Column(length = 512)
+    private String avatarUrl;
 
     @Enumerated(EnumType.STRING)
-    private Provider provider;
+    @Column(nullable = false)
+    private RoleType role;  //USER, ADMIN, TEACHER, ADMIN
 
-    @Column(name = "provider_id")
-    private String providerId;
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Provider provider = Provider.LOCAL; //xác định login bằng gì:LOCAL (email + password) GOOGLE
 
-    @Column(name = "is_active")
-    private Boolean isActive;
+    @Column(length = 255)
+    private String providerId;     // Google sub
 
-    @Column(name = "created_at", updatable = false)
+    @Column(nullable = false)
+    private boolean isActive = true;
+
+    @Column(nullable = false)
+    private boolean emailVerified = false;
+
+    @CreationTimestamp
+    @Column(updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
-        if (isActive == null)
-            isActive = true;
     }
 }
