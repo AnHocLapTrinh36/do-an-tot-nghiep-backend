@@ -1,6 +1,5 @@
 package com.example.Backend.exception;
 
-
 import com.example.Backend.dto.apiResponse.ApiResponse;
 import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.http.HttpStatus;
@@ -14,21 +13,21 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
-@Hidden //bỏ qua swagger
+@Hidden
 public class GlobalException {
 
-    // Lỗi hệ thống chung
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Object>> handleGlobalException(Exception ex) {
+    // ==================== BẮT RUNTIME EXCEPTION ====================
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ApiResponse<Object>> handleRuntimeException(RuntimeException ex) {
         ApiResponse<Object> response = ApiResponse.error(
-                "Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau!",
-                ex.getMessage(),                    // chi tiết lỗi nằm trong data
-                HttpStatus.INTERNAL_SERVER_ERROR.value()
+                "Có lỗi xảy ra khi xử lý yêu cầu",
+                ex.getMessage(),
+                HttpStatus.BAD_REQUEST.value()   //400
         );
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        return ResponseEntity.badRequest().body(response);
     }
 
-    // Lỗi validation
+    // ==================== Lỗi validation ====================
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Object>> handleValidationException(MethodArgumentNotValidException ex) {
 
@@ -41,14 +40,14 @@ public class GlobalException {
 
         ApiResponse<Object> response = ApiResponse.error(
                 "Dữ liệu không hợp lệ",
-                errors,                             // lỗi nằm trong data
+                errors,
                 HttpStatus.BAD_REQUEST.value()
         );
 
         return ResponseEntity.badRequest().body(response);
     }
 
-    // Lỗi không tìm thấy
+    // ==================== Lỗi không tìm thấy ====================
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiResponse<Object>> handleResourceNotFound(ResourceNotFoundException ex) {
         ApiResponse<Object> response = ApiResponse.error(
@@ -57,5 +56,16 @@ public class GlobalException {
                 HttpStatus.NOT_FOUND.value()
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    // ==================== Lỗi hệ thống chung (catch all) ====================
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiResponse<Object>> handleGlobalException(Exception ex) {
+        ApiResponse<Object> response = ApiResponse.error(
+                "Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau!",
+                ex.getMessage(),
+                HttpStatus.INTERNAL_SERVER_ERROR.value()
+        );
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 }

@@ -14,7 +14,7 @@ public class LoginResponse {
     private String email;
     @JsonProperty("full_name")
     private String fullName;
-    // @JsonProperty("avatar_url")
-    //private String avatarUrl;
+    @JsonProperty("avatar_url")
+    private String avatarUrl;
     private String role;
 }

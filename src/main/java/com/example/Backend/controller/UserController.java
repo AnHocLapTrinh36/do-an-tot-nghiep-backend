@@ -2,6 +2,7 @@ package com.example.Backend.controller;
 
 import com.example.Backend.dto.apiResponse.ApiResponse;
 import com.example.Backend.dto.request.ChangePasswordRequest;
+import com.example.Backend.dto.response.LoginResponse;
 import com.example.Backend.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,5 +33,13 @@ public class UserController {
         userService.changePassword(currentEmail, request.getOldPassword(), request.getNewPassword());
         ApiResponse<String> response = ApiResponse.success("Đổi mật khẩu thành công");
         return ResponseEntity.ok(response);
+    }
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<LoginResponse>> getCurrentUser(Authentication authentication) {
+        String email = authentication.getName(); // lấy từ JWT
+        LoginResponse user = userService.getUserByEmail(email);
+        return ResponseEntity.ok(
+                ApiResponse.success("User hiện tại",user, 200)
+        );
     }
 }

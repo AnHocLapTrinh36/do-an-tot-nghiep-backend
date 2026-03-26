@@ -111,9 +111,15 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Email chưa được xác thực. Vui lòng kiểm tra hộp thư.");
         }
 
-        // 4. Kiểm tra tài khoản có bị khóa không (nếu bạn dùng trường enabled)
+        // 4. Kiểm tra tài khoản có bị khóa không
         if (!user.isActive()) {
             throw new RuntimeException("Tài khoản bị khóa.");
+        }
+
+        if (user.getRole() != request.getRole()) {
+            throw new RuntimeException("Role không đúng. Tài khoản của bạn là "
+                    + user.getRole().name()
+                    + ". Vui lòng chọn đúng vai trò.");
         }
 
         // 5. Tạo access token (JWT)
@@ -124,6 +130,7 @@ public class UserServiceImpl implements UserService {
                 .accessToken(accessToken)
                 .email(user.getEmail())
                 .fullName(user.getFullName())
+                .avatarUrl(user.getAvatarUrl())
                 .role(user.getRole() != null ? user.getRole().name() : null)
                 .build();
     }
@@ -148,6 +155,19 @@ public class UserServiceImpl implements UserService {
         // Cập nhật mật khẩu mới
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
+    }
+
+    @Override
+    public LoginResponse getUserByEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return LoginResponse.builder()
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .role(user.getRole().name())
+                .avatarUrl(user.getAvatarUrl())
+                .build();
     }
     @Override
     public User findByEmail(String email) {

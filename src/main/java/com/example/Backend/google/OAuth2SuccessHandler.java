@@ -4,7 +4,9 @@ package com.example.Backend.google;
 import com.example.Backend.entity.Provider;
 import com.example.Backend.entity.RoleType;
 import com.example.Backend.entity.User;
+import com.example.Backend.repository.UserRepository;
 import com.example.Backend.security.JwtService;
+import com.example.Backend.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +22,7 @@ import java.io.IOException;
 public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
     private final JwtService jwtService; //inject -> create jwt
-    //  private final UserService userService;
+    private final UserRepository userRepository;
     @Override
     /// spring securiy sẽ tự động gọi khi login gg thành công
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -31,13 +33,23 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal(); //oAuth2User chứa attributes
 
         String email = oAuth2User.getAttribute("email");
-        User tempUser = User.builder()
-                .email(email)
-                .role(RoleType.STUDENT)   // Google mặc định STUDENT
-                .provider(Provider.GOOGLE)
-                .build();
-        // generate JWT
-        String token = jwtService.generateToken(tempUser);
+        String avatar = oAuth2User.getAttribute("picture");
+        String name = oAuth2User.getAttribute("name");
+
+        User user = userRepository.findByEmail(email)
+                .orElseGet(() -> User.builder()
+                        .email(email)
+                        .role(RoleType.STUDENT)
+                        .provider(Provider.GOOGLE)
+                        .build()
+                );
+
+        // ghi đè avatar
+        user.setAvatarUrl(avatar);
+        user.setFullName(name);
+
+        userRepository.save(user);
+        String token = jwtService.generateToken(user);
 
         response.sendRedirect("http://localhost:5173/oauth2-success?token=" + token);
     }
