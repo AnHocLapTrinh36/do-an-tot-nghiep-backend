@@ -4,14 +4,16 @@ import com.example.Backend.dto.request.RegisterRequest;
 import com.example.Backend.dto.response.RegisterResponse;
 import com.example.Backend.entity.User;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface UserMapper {
 
-
     User toEntity(RegisterRequest request);
+
+    @Mapping(target = "isActive", source = "isActive")
     RegisterResponse toDto(User user);
 
 //    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

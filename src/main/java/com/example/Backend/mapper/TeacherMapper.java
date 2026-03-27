@@ -11,9 +11,9 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface TeacherMapper {
     // 1. Dùng khi Register
-    @Mapping(target = "user", source = "user")
+    @Mapping(target = "user", ignore = true)
     @Mapping(target = "employeeCode", ignore = true)
-    Teacher toEntity(RegisterRequest request, User user);
+    Teacher toEntity(RegisterRequest request);
 
     // 2. Dùng khi Update
 //    @Mapping(target = "id", ignore = true)

@@ -15,7 +15,7 @@ import org.mapstruct.ReportingPolicy;
 public interface StudentMapper {
 
     // 1. Dùng khi Register (tạo mới Student)
-    @Mapping(target = "user", source = "user")
+    @Mapping(target = "user", ignore = true)
     @Mapping(target = "mssv", ignore = true)
     @Mapping(target = "gpa", ignore = true)
     @Mapping(target = "avatarUrl", ignore = true)
@@ -24,9 +24,9 @@ public interface StudentMapper {
     @Mapping(target = "gender", ignore = true)
     @Mapping(target = "course", ignore = true)
     @Mapping(target = "status", constant = "Đang học")
-    Student toEntity(RegisterRequest request, User user);
+    Student toEntity(RegisterRequest request);
 
-    // 2. Dùng khi Update thông tin Student (RẤT QUAN TRỌNG)
+    // 2. Dùng khi Update thông tin Student
 //    @Mapping(target = "id", ignore = true)
 //    @Mapping(target = "user", ignore = true)           // Không cho phép thay đổi User
 //    void updateEntity(@MappingTarget Student student, StudentUpdateRequest request);

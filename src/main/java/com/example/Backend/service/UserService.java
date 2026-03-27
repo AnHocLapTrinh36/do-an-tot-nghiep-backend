@@ -20,5 +20,6 @@ public interface UserService {
     boolean existsByEmail(String email);
     void changePassword(String email, String oldPassword, String newPassword) throws BadRequestException;
     LoginResponse getUserByEmail(String email);
+    LoginResponse getCurrentUser();
 
 }

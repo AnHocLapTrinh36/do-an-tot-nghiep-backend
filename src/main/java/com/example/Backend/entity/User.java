@@ -26,9 +26,14 @@ public class User {
 
     @Column(name = "full_name", nullable = false, length = 255)
     private String fullName;
-
+    /// Map Student
     @OneToOne(mappedBy = "user", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private Student student;
+    /// Map Teacher
+    @OneToOne(mappedBy = "user", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    private Teacher teacher;
+    /// Map Company
+    /// Map Admin
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -42,10 +47,10 @@ public class User {
     private String providerId;     // Google sub
 
     @Column(name = "is_active",nullable = false)
-    private boolean isActive = true;
+    private Boolean isActive = true;
 
     @Column(name = "email_verified", nullable = false)
-    private boolean emailVerified = false;
+    private Boolean emailVerified = false;
 
     @CreationTimestamp
     @Column(name = "create_at",updatable = false)

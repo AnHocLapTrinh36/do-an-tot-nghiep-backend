@@ -16,6 +16,7 @@ import com.example.Backend.service.EmailService;
 import com.example.Backend.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.apache.coyote.BadRequestException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,7 +42,6 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public RegisterResponse register(RegisterRequest request) throws BadRequestException {
-
         //check email đã có trong hệ thống hay chưa
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new BadRequestException("Email đã được sử dụng. Vui lòng đăng nhập hoặc dùng email khác.");
@@ -62,58 +62,78 @@ public class UserServiceImpl implements UserService {
                 throw new BadRequestException("Role không hợp lệ. Admin chỉ được tạo: STUDENT, COMPANY, TEACHER, ADMIN.");
             }
         }
-
         //pass hết: thực hiện tạo user trong db
         User user = userMapper.toEntity(request); ///dto -> entity
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(request.getRole());
         user.setProvider(Provider.LOCAL);
-        user.setActive(true);
+        user.setIsActive(true);
         user.setEmailVerified(false);
         User savedUser = userRepository.save(user);
 
         ///tạo student
         /// User -> tạo Student -> link 2 chiều
         if (request.getRole() == RoleType.STUDENT) {
-            Student student = studentMapper.toEntity(request, savedUser);// dùng mapper
+            Student student = studentMapper.toEntity(request);// dùng mapper
             savedUser.setStudent(student);
             studentRepository.save(student); // tạo student
         }
         /// tạo teacher
         else if (request.getRole() == RoleType.TEACHER) {
-            Teacher teacher = teacherMapper.toEntity(request, savedUser);
+            // check đã có teacher chưa
+            if (savedUser.getTeacher() != null) {
+                throw new BadRequestException("User đã là Teacher");
+            }
+            Teacher teacher = teacherMapper.toEntity(request);
+            // set quan hệ
+            teacher.setUser(savedUser);
+            savedUser.setTeacher(teacher);
+            // set business field: mã gv GV + 10 số ngẫu nhiên
             teacher.setEmployeeCode(
                     "GV" + ThreadLocalRandom.current()
                             .nextLong(1_000_000_000L, 10_000_000_000L)
             );
+            // save
             teacherRepository.save(teacher);
         }
         /// tạo company
         /// tạo admin
-//         Gửi email xác thực
+        //Gửi email xác thực
         emailService.sendVerificationEmail(user); //gửi mail + kèm link xác thực chủ email
 
         return userMapper.toDto(savedUser);
     }
 
+    private String getAvatar(User user) {
+        if (user.getRole() == RoleType.STUDENT && user.getStudent() != null) {
+            return user.getStudent().getAvatarUrl();
+        }
+
+//        if (user.getRole() == RoleType.COMPANY && user.getCompany() != null) {
+//            return user.getCompany().getAvatarUrl();
+//        }
+
+        return null;
+    }
+
+
     @Override
     public LoginResponse login(LoginRequest request) {
-        // 1. Tìm user theo email
+        // Tìm user theo email
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Email hoặc mật khẩu không đúng"));
-
-        // 2. Kiểm tra mật khẩu
+        //  Kiểm tra mật khẩu
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new RuntimeException("Email hoặc mật khẩu không đúng");
         }
 
-        // 3. Kiểm tra email đã được xác thực chưa
-        if (!user.isEmailVerified()) {
+        // Kiểm tra email đã được xác thực chưa
+        if (!user.getEmailVerified()) {
             throw new RuntimeException("Email chưa được xác thực. Vui lòng kiểm tra hộp thư.");
         }
 
-        // 4. Kiểm tra tài khoản có bị khóa không
-        if (!user.isActive()) {
+        //  Kiểm tra tài khoản có bị khóa không
+        if (!user.getIsActive()){
             throw new RuntimeException("Tài khoản bị khóa.");
         }
 
@@ -123,14 +143,12 @@ public class UserServiceImpl implements UserService {
                     + ". Vui lòng chọn đúng vai trò.");
         }
 
-        // 5. Tạo access token (JWT)
+        // Tạo access token (JWT)
         String accessToken = jwtService.generateToken(user);
 
-        // 6. Build response theo DTO AuthResponse
-
-        String avatar = user.getStudent() != null
-                ? user.getStudent().getAvatarUrl()
-                : null;
+        //lấy hình ảnh trả kèm về trong response
+        String avatar = getAvatar(user); //hàm lấy avatar của user cụ thể (tham số truyền vào user đang gửi request hiện tại)
+        // Build response theo DTO LoginResponse
         return LoginResponse.builder()
                 .accessToken(accessToken)
                 .email(user.getEmail())
@@ -146,7 +164,7 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new BadRequestException("Không tìm thấy tài khoản"));
         // Kiểm tra tài khoản có active không
-        if (!user.isActive()) {
+        if (!user.getIsActive()) {
             throw new BadRequestException("Tài khoản đã bị khóa. Không thể đổi mật khẩu.");
         }
         // Kiểm tra mật khẩu cũ có đúng không
@@ -166,19 +184,37 @@ public class UserServiceImpl implements UserService {
     public LoginResponse getUserByEmail(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        Student student = studentRepository.findByUser(user).orElse(null);
+        String avatar = getAvatar(user);
         return LoginResponse.builder()
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .role(user.getRole())
-                .avatarUrl(student != null ? student.getAvatarUrl() : null)
+                .avatarUrl(avatar)
                 .build();
     }
+    @Override
+        public LoginResponse getCurrentUser() {
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String avatar = getAvatar(user);
+
+        return LoginResponse.builder()
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .role(user.getRole())
+                .avatarUrl(avatar)
+                .build();
+    }
+
     @Override
     public User findByEmail(String email) {
         return userRepository.findByEmail(email).orElse(null);
     }
-
     @Override
     public boolean existsByEmail(String email) {
         return userRepository.existsByEmail(email);
