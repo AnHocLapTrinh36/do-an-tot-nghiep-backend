@@ -1,7 +1,11 @@
 package com.example.Backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.HashSet;
+import java.util.Set;
 
 
 @Entity
@@ -23,7 +27,12 @@ public class Teacher {
             unique = true,
             foreignKey = @ForeignKey(name = "fk_teacher_user")
     )
+    @JsonIgnore
     private User user;
     @Column(name = "employee_code", unique = true)
     private String employeeCode;
+    @ManyToMany(mappedBy = "teachers")
+    @ToString.Exclude
+    @JsonIgnore
+    private Set<Course> courses = new HashSet<>();
 }
