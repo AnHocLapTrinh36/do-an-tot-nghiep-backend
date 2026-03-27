@@ -3,7 +3,9 @@ package com.example.Backend.google;
 
 import com.example.Backend.entity.Provider;
 import com.example.Backend.entity.RoleType;
+import com.example.Backend.entity.Student;
 import com.example.Backend.entity.User;
+import com.example.Backend.repository.StudentRepository;
 import com.example.Backend.repository.UserRepository;
 import com.example.Backend.security.JwtService;
 import com.example.Backend.service.UserService;
@@ -23,6 +25,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
     private final JwtService jwtService; //inject -> create jwt
     private final UserRepository userRepository;
+    private final StudentRepository studentRepository;
     @Override
     /// spring securiy sẽ tự động gọi khi login gg thành công
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -37,17 +40,31 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         String name = oAuth2User.getAttribute("name");
 
         User user = userRepository.findByEmail(email)
-                .orElseGet(() -> User.builder()
-                        .email(email)
-                        .role(RoleType.STUDENT)
-                        .provider(Provider.GOOGLE)
-                        .build()
-                );
+                .orElseGet(() -> {
+                    User newUser = User.builder()
+                            .email(email)
+                            .role(RoleType.STUDENT)
+                            .provider(Provider.GOOGLE)
+                            .build();
+                    return userRepository.save(newUser);
+                });
 
-        // ghi đè avatar
-        user.setAvatarUrl(avatar);
+        // tìm hoặc tạo student
+        Student student = studentRepository.findByUser(user)
+                .orElseGet(() -> {
+                    Student newStudent = Student.builder()
+                            .user(user)
+                            .build();
+                    user.setStudent(newStudent);
+                    return newStudent;
+                });
+
+        // update dữ liệu
+        student.setAvatarUrl(avatar);
         user.setFullName(name);
 
+        // save
+        studentRepository.save(student);
         userRepository.save(user);
         String token = jwtService.generateToken(user);
 

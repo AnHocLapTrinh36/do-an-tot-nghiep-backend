@@ -20,7 +20,7 @@ public class Student {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @OneToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(
             name = "user_id",
             referencedColumnName = "id",
@@ -29,8 +29,6 @@ public class Student {
             foreignKey = @ForeignKey(name = "fk_student_user")
     )
     private User user;
-    @Column(name = "user_id", insertable = false, updatable = false)
-    private Long userId;
 
     @Column(unique = true, length = 20)
     private String mssv;
@@ -57,6 +55,6 @@ public class Student {
     private String status;
 
     @CreationTimestamp
-    @Column(updatable = false)
+    @Column(name = "created_at",updatable = false)
     private LocalDateTime createdAt;
 }

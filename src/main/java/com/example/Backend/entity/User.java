@@ -24,31 +24,31 @@ public class User {
     @Column(name = "password", length = 255)
     private String password;  // NULL nếu chỉ GOOGLE
 
-    @Column(nullable = false, length = 255)
+    @Column(name = "full_name", nullable = false, length = 255)
     private String fullName;
 
-    @Column(name= "avatar_url",length = 512)
-    private String avatarUrl;
+    @OneToOne(mappedBy = "user", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    private Student student;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private RoleType role;  //USER, ADMIN, TEACHER, ADMIN
 
-    @Column(nullable = false)
+    @Column( nullable = false)
     @Enumerated(EnumType.STRING)
     private Provider provider = Provider.LOCAL; //xác định login bằng gì:LOCAL (email + password) GOOGLE
 
-    @Column(length = 255)
+    @Column(name = "provider_id",length = 255)
     private String providerId;     // Google sub
 
-    @Column(nullable = false)
+    @Column(name = "is_active",nullable = false)
     private boolean isActive = true;
 
-    @Column(nullable = false)
+    @Column(name = "email_verified", nullable = false)
     private boolean emailVerified = false;
 
     @CreationTimestamp
-    @Column(updatable = false)
+    @Column(name = "create_at",updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist

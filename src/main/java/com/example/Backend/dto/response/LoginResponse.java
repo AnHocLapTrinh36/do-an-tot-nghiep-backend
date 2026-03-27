@@ -1,5 +1,6 @@
 package com.example.Backend.dto.response;
 
+import com.example.Backend.entity.RoleType;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
@@ -16,5 +17,5 @@ public class LoginResponse {
     private String fullName;
     @JsonProperty("avatar_url")
     private String avatarUrl;
-    private String role;
+    private RoleType role;
 }

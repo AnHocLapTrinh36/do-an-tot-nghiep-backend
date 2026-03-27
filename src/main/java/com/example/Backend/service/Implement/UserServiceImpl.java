@@ -72,10 +72,11 @@ public class UserServiceImpl implements UserService {
         user.setEmailVerified(false);
         User savedUser = userRepository.save(user);
 
-
         ///tạo student
+        /// User -> tạo Student -> link 2 chiều
         if (request.getRole() == RoleType.STUDENT) {
             Student student = studentMapper.toEntity(request, savedUser);// dùng mapper
+            savedUser.setStudent(student);
             studentRepository.save(student); // tạo student
         }
         /// tạo teacher
@@ -126,12 +127,16 @@ public class UserServiceImpl implements UserService {
         String accessToken = jwtService.generateToken(user);
 
         // 6. Build response theo DTO AuthResponse
+
+        String avatar = user.getStudent() != null
+                ? user.getStudent().getAvatarUrl()
+                : null;
         return LoginResponse.builder()
                 .accessToken(accessToken)
                 .email(user.getEmail())
                 .fullName(user.getFullName())
-                .avatarUrl(user.getAvatarUrl())
-                .role(user.getRole() != null ? user.getRole().name() : null)
+                .avatarUrl(avatar)
+                .role(user.getRole() != null ? user.getRole() : null)
                 .build();
     }
 
@@ -161,12 +166,12 @@ public class UserServiceImpl implements UserService {
     public LoginResponse getUserByEmail(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
+        Student student = studentRepository.findByUser(user).orElse(null);
         return LoginResponse.builder()
                 .email(user.getEmail())
                 .fullName(user.getFullName())
-                .role(user.getRole().name())
-                .avatarUrl(user.getAvatarUrl())
+                .role(user.getRole())
+                .avatarUrl(student != null ? student.getAvatarUrl() : null)
                 .build();
     }
     @Override
