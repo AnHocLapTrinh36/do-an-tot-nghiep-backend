@@ -1,5 +1,6 @@
 package com.example.Backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -22,6 +23,7 @@ public class User {
     private String email;
 
     @Column(name = "password", length = 255)
+    @JsonIgnore
     private String password;  // NULL nếu chỉ GOOGLE
 
     @Column(name = "full_name", nullable = false, length = 255)
@@ -39,21 +41,21 @@ public class User {
     @Column(nullable = false)
     private RoleType role;  //USER, ADMIN, TEACHER, ADMIN
 
-    @Column( nullable = false)
+    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private Provider provider = Provider.LOCAL; //xác định login bằng gì:LOCAL (email + password) GOOGLE
 
-    @Column(name = "provider_id",length = 255)
+    @Column(name = "provider_id", length = 255)
     private String providerId;     // Google sub
 
-    @Column(name = "is_active",nullable = false)
+    @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
     @Column(name = "email_verified", nullable = false)
     private Boolean emailVerified = false;
 
     @CreationTimestamp
-    @Column(name = "create_at",updatable = false)
+    @Column(name = "create_at", updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist

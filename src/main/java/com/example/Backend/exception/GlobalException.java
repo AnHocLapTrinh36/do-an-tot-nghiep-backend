@@ -61,6 +61,7 @@ public class GlobalException {
     // ==================== Lỗi hệ thống chung (catch all) ====================
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleGlobalException(Exception ex) {
+        ex.printStackTrace();
         ApiResponse<Object> response = ApiResponse.error(
                 "Đã xảy ra lỗi hệ thống. Vui lòng thử lại sau!",
                 ex.getMessage(),
