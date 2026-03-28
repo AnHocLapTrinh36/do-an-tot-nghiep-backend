@@ -56,5 +56,5 @@ public class TeacherController {
         return ResponseEntity.ok(response);
     }
 
-    ///update cho teacher (teacher tự update thông tin mình (full_name từ bảng users) - k cần viết api update teacher cho admin)
+    ///update cho teacher (teacher tự update thông tin (full_name từ bảng users) - k cần viết api update teacher cho admin)
 }

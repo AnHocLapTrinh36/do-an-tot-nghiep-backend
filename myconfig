@@ -1,0 +1,49 @@
+spring.application.name=Backend
+# ==================== SQL Server Connection  ====================
+spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=database_portal;encrypt=true;trustServerCertificate=true;sendStringParametersAsUnicode=true
+
+spring.datasource.username=sa
+spring.datasource.password=123456
+spring.datasource.driver-class-name=com.microsoft.sqlserver.jdbc.SQLServerDriver
+
+# ==================== JPA & Hibernate ====================
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+#GOOGLE
+spring.security.oauth2.client.registration.google.client-id=458518937810-5gdkf921ujlsvcfkfelmmrg3ev51quq5.apps.googleusercontent.com
+spring.security.oauth2.client.registration.google.client-secret=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
+spring.security.oauth2.client.registration.google.scope=email,profile
+
+#Gmail SMTP
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=hoaitam653@gmail.com
+spring.mail.password=ffbp ouid upbo vdue
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.smtp.starttls.required=true
+
+#URL BACKEND
+app.backend.url=http://localhost:8080
+
+#LOG GOOGLE
+logging.level.org.springframework.security: DEBUG
+logging.level.org.springframework.security.oauth2: DEBUG
+
+#JWT CONSTANT
+jwt.secret=JfF1VCzkIT2qpK2ugUESRi+I8XHXVr2U+lqXzdMC9h8=
+jwt.expiration=86400000
+#CLOUD
+#ACCOUNT 1
+app.cloudinary.account1.cloud-name=dyorlnau8
+app.cloudinary.account1.api-key=664386983739912
+app.cloudinary.account1.api-secret=5fbBVhSb95dKZPMWyhzMY3mMsdk
+spring.servlet.multipart.enabled=true
+spring.servlet.multipart.max-file-size=10MB
+spring.servlet.multipart.max-request-size=10MB
+#ACCOUNT 2
+app.cloudinary.account2.cloud-name=name_xyz
+app.cloudinary.account2.api-key=444555666
+app.cloudinary.account2.api-secret=secret_999
