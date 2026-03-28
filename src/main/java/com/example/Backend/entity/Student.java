@@ -30,9 +30,8 @@ public class Student {
     )
     private User user;
 
-    @Column(unique = true, length = 20)
+    @Column(unique = true, length = 20,updatable = false)
     private String mssv;
-
 
     @Column(precision = 3, scale = 2)
     private BigDecimal gpa;

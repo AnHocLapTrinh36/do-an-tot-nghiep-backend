@@ -27,28 +27,28 @@ public class SecurityConfig {
 
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
-        private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
         http
                 .cors(cors -> cors.configurationSource(request -> {
-                        CorsConfiguration configuration = new CorsConfiguration();
-                        configuration.setAllowedOrigins(List.of("http://localhost:5173"));   // Frontend Vite
-                        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-                        configuration.setAllowedHeaders(List.of("*"));
-                        configuration.setAllowCredentials(true);   //JWT
-                        configuration.setMaxAge(3600L);
-                        return configuration;
-        }))
-
+                    CorsConfiguration configuration = new CorsConfiguration();
+                    configuration.setAllowedOriginPatterns(List.of("*"));
+                    configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+                    configuration.setAllowedHeaders(List.of("*"));
+                    configuration.setAllowCredentials(true);
+                    configuration.setExposedHeaders(List.of("Authorization"));
+                    configuration.setMaxAge(3600L);
+                    return configuration;
+                }))
 
                 .csrf(csrf -> csrf.disable())
 
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers(
+                                "/api/students/{id}",
                                 "/api/test/public",
                                 "/api/auth/register",
                                 "/api/auth/user/**",
@@ -60,13 +60,7 @@ public class SecurityConfig {
                                 "/error",
                                 "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
                         ).permitAll()
-                        .requestMatchers("/api/student/{mssv}").hasAnyRole("ADMIN", "TEACHER")
-                        // Role-based endpoints
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/student/**").hasRole("STUDENT")
-                        .requestMatchers("/api/teacher/**").hasRole("TEACHER")
-                        .requestMatchers("/api/company/**").hasRole("COMPANY")
-
+                        //.requestMatchers("/api/student/{mssv}").hasAnyRole("ADMIN", "TEACHER")
                         .anyRequest().authenticated()
                 )
 

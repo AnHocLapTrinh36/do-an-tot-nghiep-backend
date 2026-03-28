@@ -74,9 +74,20 @@ public class UserServiceImpl implements UserService {
         ///tạo student
         /// User -> tạo Student -> link 2 chiều
         if (request.getRole() == RoleType.STUDENT) {
-            Student student = studentMapper.toEntity(request);// dùng mapper
+            //  Map request sang entity Student
+            Student student = studentMapper.toEntity(request);
+            //  Tạo MSSV ngẫu nhiên
+            student.setMssv("SV" + ThreadLocalRandom.current()
+                    .nextLong(1_000_000_000L, 10_000_000_000L));
+
+            // Gán liên kết User vào Student để có user_id
+            student.setUser(savedUser);
+
+            //  Gán ngược lại để đồng bộ object trong memory
             savedUser.setStudent(student);
-            studentRepository.save(student); // tạo student
+
+            // lưu Student (Lúc này user_id đã có giá trị từ savedUser.id)
+            studentRepository.save(student);
         }
         /// tạo teacher
         else if (request.getRole() == RoleType.TEACHER) {

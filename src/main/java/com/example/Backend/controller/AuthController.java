@@ -10,6 +10,7 @@ import com.example.Backend.entity.VerificationToken;
 import com.example.Backend.repository.UserRepository;
 import com.example.Backend.repository.VerificationTokenRepository;
 import com.example.Backend.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.apache.coyote.BadRequestException;
@@ -31,6 +32,7 @@ public class AuthController {
 
     /// Đăng ký dành cho student + company
     @PostMapping("/register")
+    @Operation(summary = "Đăng ký cho sinh viên + company")
     public ResponseEntity<ApiResponse<RegisterResponse>> register(
             @Valid @RequestBody RegisterRequest request) throws BadRequestException {
         request.setCreatedByAdmin(false);
@@ -45,6 +47,7 @@ public class AuthController {
     /// Đăng ký dành cho teacher + admin
     @PostMapping("/admin/register")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Đăng ký cho teacher(admin đăng ký cho teacher) + admin")
     public ResponseEntity<ApiResponse<RegisterResponse>> adminRegister(@Valid @RequestBody RegisterRequest request) throws BadRequestException {
         request.setCreatedByAdmin(true);
         RegisterResponse registeredUser = userService.register(request);
@@ -57,6 +60,7 @@ public class AuthController {
     }
     /// login hệ thống
     @PostMapping("/login")
+    @Operation(summary = "đăng nhập hệ thống")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) throws BadRequestException {
         LoginResponse loginResponse = userService.login(request);
         ApiResponse<LoginResponse> response = ApiResponse.success(
@@ -67,6 +71,7 @@ public class AuthController {
     }
     /// xác thực email
     @GetMapping("/verify")
+    @Operation(summary = "xác thực mail qua link khi user click xác nhận")
     public ResponseEntity<?> verifyEmail(@RequestParam("token") String token) {
         try {
             Optional<VerificationToken> optToken = tokenRepository.findByToken(token);
@@ -92,7 +97,9 @@ public class AuthController {
         }
     }
 
+    /// page profile
     ///  @PostMapping("/forgot-password")
-    /// nhận mail ->check->tạo mk mới trong db -> gửi mk mới qua mail cho user -> kết thúc
+//    @Operation(summary = "quên mật khẩu")
+    ///nhận mail request ->check->tạo mk mới trong db -> gửi mk mới qua mail cho user -> kết thúc
 
 }

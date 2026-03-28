@@ -25,7 +25,6 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
     private final JwtService jwtService; //inject -> create jwt
     private final UserRepository userRepository;
-    private final StudentRepository studentRepository;
     @Override
     /// spring securiy sẽ tự động gọi khi login gg thành công
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -36,35 +35,10 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal(); //oAuth2User chứa attributes
 
         String email = oAuth2User.getAttribute("email");
-        String avatar = oAuth2User.getAttribute("picture");
-        String name = oAuth2User.getAttribute("name");
 
         User user = userRepository.findByEmail(email)
-                .orElseGet(() -> {
-                    User newUser = User.builder()
-                            .email(email)
-                            .role(RoleType.STUDENT)
-                            .provider(Provider.GOOGLE)
-                            .build();
-                    return userRepository.save(newUser);
-                });
+                .orElseThrow(() -> new IllegalStateException("Không tìm thấy user sau khi xác thực Google"));
 
-        // tìm hoặc tạo student
-        Student student = studentRepository.findByUser(user)
-                .orElseGet(() -> {
-                    Student newStudent = Student.builder()
-                            .user(user)
-                            .build();
-                    user.setStudent(newStudent);
-                    return newStudent;
-                });
-
-        // update dữ liệu
-        student.setAvatarUrl(avatar);
-        user.setFullName(name);
-
-        // save
-        studentRepository.save(student);
         userRepository.save(user);
         String token = jwtService.generateToken(user);
 

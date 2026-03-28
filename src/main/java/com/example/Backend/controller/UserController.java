@@ -4,6 +4,7 @@ import com.example.Backend.dto.apiResponse.ApiResponse;
 import com.example.Backend.dto.request.ChangePasswordRequest;
 import com.example.Backend.dto.response.LoginResponse;
 import com.example.Backend.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,17 +28,19 @@ public class UserController {
      * Đổi mật khẩu - User phải đang đăng nhập
      */
     @PutMapping("/change-password")
+    @Operation(summary = "đổi mật khẩu - phải login mới dc đổi mk")
     public ResponseEntity<ApiResponse<String>> changePassword(
             @Valid @RequestBody ChangePasswordRequest request,
             Authentication authentication) throws BadRequestException {
-        /// authentication.getName() trả về giá trị của Subject trong JWT.
         String currentEmail = authentication.getName();   // email từ JWT
         userService.changePassword(currentEmail, request.getOldPassword(), request.getNewPassword());
         ApiResponse<String> response = ApiResponse.success("Đổi mật khẩu thành công");
         return ResponseEntity.ok(response);
     }
+    /// thông tin chi tiết user hiện tại
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<LoginResponse>> getCurrentUser(Authentication authentication) {
+    @Operation(summary = "Lấy thông tin user hiện tại")
+    public ResponseEntity<ApiResponse<LoginResponse>> getCurrentUser() {
         LoginResponse user = userService.getCurrentUser();
         log.info("User hiện tại: {}", user);
         return ResponseEntity.ok(

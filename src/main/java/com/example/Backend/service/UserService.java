@@ -21,5 +21,4 @@ public interface UserService {
     void changePassword(String email, String oldPassword, String newPassword) throws BadRequestException;
     LoginResponse getUserByEmail(String email);
     LoginResponse getCurrentUser();
-
 }

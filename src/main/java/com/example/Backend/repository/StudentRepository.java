@@ -18,5 +18,8 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
 
     Optional<Student> findByUser(User user);
 
+    //chức năng tự update profile
+    Optional<Student> findByUserEmail(String email);
+
 
 }
