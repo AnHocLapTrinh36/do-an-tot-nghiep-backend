@@ -1,6 +1,5 @@
 package com.example.Backend.entity;
 
-
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -29,5 +28,4 @@ public class Admin {
 
     @Column(name = "phone", length = 20)
     private String phone;
-
 }
