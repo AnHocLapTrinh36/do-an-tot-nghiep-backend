@@ -3,8 +3,10 @@ package com.example.Backend.service.Implement;
 import com.example.Backend.dto.request.LoginRequest;
 import com.example.Backend.dto.response.LoginResponse;
 import com.example.Backend.entity.*;
+import com.example.Backend.mapper.AdminMapper;
 import com.example.Backend.mapper.StudentMapper;
 import com.example.Backend.mapper.TeacherMapper;
+import com.example.Backend.repository.AdminRepository;
 import com.example.Backend.repository.TeacherRepository;
 import com.example.Backend.security.JwtService;
 import com.example.Backend.dto.request.RegisterRequest;
@@ -35,9 +37,11 @@ public class UserServiceImpl implements UserService {
     private final JwtService jwtService;
     private final StudentRepository studentRepository;
     private final TeacherRepository teacherRepository;
+    private final AdminRepository adminRepository;
     private final UserMapper userMapper;
     private final StudentMapper studentMapper;
     private final TeacherMapper teacherMapper;
+    private final AdminMapper adminMapper;
 
     @Override
     @Transactional
@@ -100,8 +104,28 @@ public class UserServiceImpl implements UserService {
             // save
             teacherRepository.save(teacher);
         }
-        /// tạo company
         /// tạo admin
+        else if (request.getRole() == RoleType.ADMIN) {
+            // check đã có admin chưa
+            if (savedUser.getAdmin() != null) {
+                throw new BadRequestException("User đã là Admin");
+            }
+
+             Admin admin = adminMapper.toEntity(request);
+            admin.setUser(savedUser);
+            savedUser.setAdmin(admin);
+            admin.setAdminCode(
+                    "AD" + ThreadLocalRandom.current()
+                            .nextLong(1_000_000_000L, 10_000_000_000L)
+            );
+
+            // Có thể set một chức vụ mặc định khi mới tạo
+            admin.setPosition("Chưa cập nhật");
+
+            // save
+            adminRepository.save(admin);
+        }
+        /// tạo company
         //Gửi email xác thực
         emailService.sendVerificationEmail(user); //gửi mail + kèm link xác thực chủ email
         return userMapper.toDto(savedUser);

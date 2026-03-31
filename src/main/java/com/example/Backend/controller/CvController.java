@@ -45,6 +45,7 @@ public class CvController {
     }
 
     @PostMapping("/upload")
+    @Operation(summary = "upload file cv")
     public ResponseEntity<CvResponse> uploadCv(
             @RequestPart("title") String title,
             @RequestPart("file") MultipartFile file) throws Exception {
@@ -65,6 +66,7 @@ public class CvController {
     //danh sách tất cả CV (role admin)
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "danh sách tất cả CV (role admin)")
     public ResponseEntity<List<CvResponse>> getAllCvs() {
         List<CvResponse> responses = cvService.getAllCvs();
         return ResponseEntity.ok(responses);

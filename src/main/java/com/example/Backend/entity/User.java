@@ -36,6 +36,8 @@ public class User {
     private Teacher teacher;
     /// Map Company
     /// Map Admin
+    @OneToOne(mappedBy = "user", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    private Admin admin;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
