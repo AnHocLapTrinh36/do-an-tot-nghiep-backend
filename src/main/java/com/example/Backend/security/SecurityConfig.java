@@ -50,6 +50,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/students/{id}",
                                 "/api/test/public",
+                                "/api/companies",
+                                "/api/companies/{id}",
                                 "/api/auth/register",
                                 "/api/auth/user/**",
                                 "/api/auth/login",
@@ -81,9 +83,9 @@ public class SecurityConfig {
                             response.setStatus(HttpStatus.UNAUTHORIZED.value());
                             response.setContentType("application/json;charset=UTF-8");
                             String json = """
-                        {"error": "Unauthorized", 
-                         "message": "Vui lòng đăng nhập để truy cập tài nguyên này"}
-                        """;
+                                    {"error": "Unauthorized", 
+                                     "message": "Vui lòng đăng nhập để truy cập tài nguyên này"}
+                                    """;
                             response.getWriter().write(json);
                         })
                 )

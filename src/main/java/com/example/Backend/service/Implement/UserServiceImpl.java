@@ -3,8 +3,10 @@ package com.example.Backend.service.Implement;
 import com.example.Backend.dto.request.LoginRequest;
 import com.example.Backend.dto.response.LoginResponse;
 import com.example.Backend.entity.*;
+import com.example.Backend.mapper.CompanyMapper;
 import com.example.Backend.mapper.StudentMapper;
 import com.example.Backend.mapper.TeacherMapper;
+import com.example.Backend.repository.CompanyReponsitory;
 import com.example.Backend.repository.TeacherRepository;
 import com.example.Backend.security.JwtService;
 import com.example.Backend.dto.request.RegisterRequest;
@@ -20,10 +22,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.concurrent.ThreadLocalRandom;
-
-
-
 
 
 @Service
@@ -38,6 +38,8 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final StudentMapper studentMapper;
     private final TeacherMapper teacherMapper;
+    private final CompanyMapper companyMapper;
+    private final CompanyReponsitory companyReponsitory;
 
     @Override
     @Transactional
@@ -52,8 +54,7 @@ public class UserServiceImpl implements UserService {
             if (request.getRole() != RoleType.STUDENT && request.getRole() != RoleType.COMPANY) {
                 throw new BadRequestException("Role không hợp lệ cho đăng ký tự động. Chỉ STUDENT và COMPANY được phép tự đăng ký.");
             }
-        }
-        else {
+        } else {
             // ================== ADMIN TẠO TÀI KHOẢN ==================
             // Chỉ cho phép tạo TEACHER và ADMIN
             if (request.getRole() != RoleType.TEACHER && request.getRole() != RoleType.ADMIN
@@ -88,6 +89,11 @@ public class UserServiceImpl implements UserService {
 
             // lưu Student (Lúc này user_id đã có giá trị từ savedUser.id)
             studentRepository.save(student);
+        } else if (request.getRole() == RoleType.COMPANY) {
+            Company company = companyMapper.toEntity(request);
+            company.setUser(savedUser);
+            savedUser.setCompany(company);
+            companyReponsitory.save(company);
         }
         /// tạo teacher
         else if (request.getRole() == RoleType.TEACHER) {
@@ -144,7 +150,7 @@ public class UserServiceImpl implements UserService {
         }
 
         //  Kiểm tra tài khoản có bị khóa không
-        if (!user.getIsActive()){
+        if (!user.getIsActive()) {
             throw new RuntimeException("Tài khoản bị khóa.");
         }
 
@@ -203,8 +209,9 @@ public class UserServiceImpl implements UserService {
                 .avatarUrl(avatar)
                 .build();
     }
+
     @Override
-        public LoginResponse getCurrentUser() {
+    public LoginResponse getCurrentUser() {
         String email = SecurityContextHolder.getContext()
                 .getAuthentication()
                 .getName();
@@ -226,6 +233,7 @@ public class UserServiceImpl implements UserService {
     public User findByEmail(String email) {
         return userRepository.findByEmail(email).orElse(null);
     }
+
     @Override
     public boolean existsByEmail(String email) {
         return userRepository.existsByEmail(email);

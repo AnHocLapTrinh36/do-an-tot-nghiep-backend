@@ -19,7 +19,8 @@ public class Teacher {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @OneToOne(fetch = FetchType.LAZY, optional = false, cascade = CascadeType.REMOVE,
+            orphanRemoval = true)
     @JoinColumn(
             name = "user_id",
             referencedColumnName = "id",
