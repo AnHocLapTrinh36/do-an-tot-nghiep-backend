@@ -76,17 +76,10 @@ public class UserServiceImpl implements UserService {
         if (request.getRole() == RoleType.STUDENT) {
             //  Map request sang entity Student
             Student student = studentMapper.toEntity(request);
-            //  Tạo MSSV ngẫu nhiên
             student.setMssv("SV" + ThreadLocalRandom.current()
                     .nextLong(1_000_000_000L, 10_000_000_000L));
-
-            // Gán liên kết User vào Student để có user_id
             student.setUser(savedUser);
-
-            //  Gán ngược lại để đồng bộ object trong memory
             savedUser.setStudent(student);
-
-            // lưu Student (Lúc này user_id đã có giá trị từ savedUser.id)
             studentRepository.save(student);
         }
         /// tạo teacher
@@ -111,15 +104,15 @@ public class UserServiceImpl implements UserService {
         /// tạo admin
         //Gửi email xác thực
         emailService.sendVerificationEmail(user); //gửi mail + kèm link xác thực chủ email
-
         return userMapper.toDto(savedUser);
     }
 
+    //hàm hỗ trợ lấy hình ảnh từ user
     private String getAvatar(User user) {
         if (user.getRole() == RoleType.STUDENT && user.getStudent() != null) {
             return user.getStudent().getAvatarUrl();
         }
-
+            /// mở cmt khi xong module company
 //        if (user.getRole() == RoleType.COMPANY && user.getCompany() != null) {
 //            return user.getCompany().getAvatarUrl();
 //        }
@@ -158,7 +151,7 @@ public class UserServiceImpl implements UserService {
         String accessToken = jwtService.generateToken(user);
 
         //lấy hình ảnh trả kèm về trong response
-        String avatar = getAvatar(user); //hàm lấy avatar của user cụ thể (tham số truyền vào user đang gửi request hiện tại)
+        String avatar = getAvatar(user);
         // Build response theo DTO LoginResponse
         return LoginResponse.builder()
                 .accessToken(accessToken)

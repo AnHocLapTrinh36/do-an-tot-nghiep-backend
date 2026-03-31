@@ -1,0 +1,61 @@
+package com.example.Backend.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "cvs")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Cv {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "student_id", nullable = false)
+    private Student student;
+
+    @Column(nullable = false)
+    private String title;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private CVType type = CVType.FORM;
+
+    @Column(name = "content_json", columnDefinition = "TEXT")
+    private String contentJson;
+
+    @Column(name = "is_approved")
+    private Boolean isApproved = false;
+
+    @Column(name = "is_public")
+    private Boolean isPublic = false;
+
+    @Column(name = "approved_by")
+    private Integer approvedBy;
+
+    @Column(name = "view_count")
+    private Integer viewCount = 0;
+
+    @Column(name = "download_count")
+    private Integer downloadCount = 0;
+
+    @OneToOne(mappedBy = "cv", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private CvFile cvFile;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+}

@@ -35,7 +35,21 @@ public class CloudinaryService {
 
         return (String) uploadResult.get("secure_url");
     }
+    public String uploadFile(MultipartFile file, String folder, String account) throws IOException {
+        if (file == null || file.isEmpty()) {
+            return null;
+        }
 
+        Cloudinary cloudinary = "2".equals(account) ? cloudinaryAccount2 : cloudinaryAccount1;
+
+        Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
+                "folder", folder,
+                "resource_type", "auto",        // auto để hỗ trợ PDF, image, raw...
+                "overwrite", true
+        ));
+
+        return (String) uploadResult.get("secure_url");
+    }
     /**
      * Xóa avatar với khả năng chọn account
      * account = "1" hoặc "2"

@@ -6,6 +6,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "students")
@@ -29,6 +30,9 @@ public class Student {
             foreignKey = @ForeignKey(name = "fk_student_user")
     )
     private User user;
+
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Cv> cvs;
 
     @Column(unique = true, length = 20,updatable = false)
     private String mssv;
