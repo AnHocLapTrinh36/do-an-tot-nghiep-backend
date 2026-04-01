@@ -75,7 +75,6 @@ public class CloudinaryService {
             return null;
         }
         try {
-            // Ví dụ URL: https://res.cloudinary.com/dyorinau8/image/upload/v177.../avatars/student/abc123.png
             String[] parts = imageUrl.split("/");
             for (int i = 0; i < parts.length; i++) {
                 if ("upload".equals(parts[i]) && i + 2 < parts.length) {

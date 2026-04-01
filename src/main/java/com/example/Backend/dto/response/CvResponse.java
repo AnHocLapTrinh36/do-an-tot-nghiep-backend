@@ -19,6 +19,8 @@ public class CvResponse {
     private Boolean isPublic;
     @JsonProperty("is_approved")
     private Boolean isApproved;
+    @JsonProperty("approved_by")
+    private Long approvedBy;
     @JsonProperty("created_at")
     private LocalDateTime createdAt;
     @JsonProperty("updated_at")
