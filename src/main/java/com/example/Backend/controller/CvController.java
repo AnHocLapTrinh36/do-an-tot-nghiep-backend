@@ -3,6 +3,8 @@ package com.example.Backend.controller;
 import com.example.Backend.dto.apiResponse.ApiResponse;
 import com.example.Backend.dto.request.CvRequest;
 import com.example.Backend.dto.request.CvUploadRequest;
+import com.example.Backend.dto.request.admin.AdminApprovedCv;
+import com.example.Backend.dto.response.CvPreviewResponse;
 import com.example.Backend.dto.response.CvResponse;
 import com.example.Backend.service.CvService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -22,6 +24,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class CvController {
+
 
     private final CvService cvService;
     private final ObjectMapper objectMapper;
@@ -87,6 +90,24 @@ public class CvController {
         return ResponseEntity.ok(ApiResponse.success("Xóa CV thành công"));
     }
     /// /api/cvs/{id}/preview	Lấy nội dung CV đã render (HTML hoặc JSON) để hiển thị preview.
-    ///admin duyệt Cv của sinh viên (role admin) - chờ module admin
+
+    @GetMapping("/{id}/preview")
+    @PreAuthorize("isAuthenticated()") // Cho phép mọi user đã đăng nhập gọi, Service sẽ check quyền chi tiết
+    @Operation(summary = "Lấy nội dung CV để hiển thị preview (HTML/JSON hoặc PDF)")
+    public ResponseEntity<ApiResponse<CvPreviewResponse>> previewCv(@PathVariable Long id) {
+        CvPreviewResponse response = cvService.previewCv(id);
+        return ResponseEntity.ok(ApiResponse.success("Lấy dữ liệu preview thành công", response));
+    }
+    ///admin duyệt Cv của sinh viên (role admin)
+    @PutMapping("/{id}/approve")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Duyệt hoặc từ chối CV (Chỉ Admin)")
+    public ResponseEntity<ApiResponse<CvResponse>> approveCv(
+            @PathVariable Long id,
+            @RequestBody AdminApprovedCv request) {
+        CvResponse response = cvService.approveCv(id, request.isApproved());
+        String message = request.isApproved() ? "Duyệt CV thành công" : "Từ chối CV thành công";
+        return ResponseEntity.ok(ApiResponse.success(message, response));
+    }
 
 }

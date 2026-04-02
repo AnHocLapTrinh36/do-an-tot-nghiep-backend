@@ -1,6 +1,5 @@
 package com.example.Backend.service.Implement;
 
-import com.cloudinary.Cloudinary;
 import com.example.Backend.cloudinary.CloudinaryService;
 import com.example.Backend.dto.request.CompanyUpdateRequest;
 import com.example.Backend.dto.request.admin.AdminUpdateCompanyRequest;
@@ -10,7 +9,7 @@ import com.example.Backend.entity.Company;
 import com.example.Backend.entity.CompanyStatus;
 import com.example.Backend.exception.ResourceNotFoundException;
 import com.example.Backend.mapper.CompanyMapper;
-import com.example.Backend.repository.AdminReponsitory;
+import com.example.Backend.repository.AdminRepository;
 import com.example.Backend.repository.CompanyReponsitory;
 import com.example.Backend.service.CompanyService;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +24,7 @@ import java.util.List;
 public class CompanyServiceImpl implements CompanyService {
     private final CompanyReponsitory companyReponsitory;
     private final CompanyMapper companyMapper;
-    private final AdminReponsitory adminReponsitory;
+    private final AdminRepository adminRepository;
     private final CloudinaryService cloudinaryService;
 
     @Override
@@ -45,7 +44,7 @@ public class CompanyServiceImpl implements CompanyService {
     public CompanyResponse updateStatusByAdmin(Long id, AdminUpdateCompanyRequest request) {
         Company company = companyReponsitory.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tim thấy công ty"));
-        Admin admin = adminReponsitory.findById(request.getAdminId())
+        Admin admin = adminRepository.findById(request.getAdminId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Admin với ID: " + request.getAdminId()));
         company.setVerifiedBy(admin);
         if (request.getStatus() != null && !request.getStatus().isBlank()) {

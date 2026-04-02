@@ -39,7 +39,7 @@ public class Cv {
     private Boolean isPublic = false;
 
     @Column(name = "approved_by")
-    private Integer approvedBy;
+    private Long approvedBy;
 
     @Column(name = "view_count")
     private Integer viewCount = 0;

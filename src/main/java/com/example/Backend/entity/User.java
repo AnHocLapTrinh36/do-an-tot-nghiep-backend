@@ -35,13 +35,13 @@ public class User {
     /// Map Teacher
     @OneToOne(mappedBy = "user", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private Teacher teacher;
+    /// Map Company
+
     @OneToOne(mappedBy = "user", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private Company company;
-    //Eager: lấy ra khi vừa tạo xong
-    //Lazy: khi cần mới lấy
-    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    /// Map Admin
+    @OneToOne(mappedBy = "user", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private Admin admin;
-    /// Map Company
 
 
     @Enumerated(EnumType.STRING)

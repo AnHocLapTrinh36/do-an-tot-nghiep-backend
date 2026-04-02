@@ -2,6 +2,7 @@ package com.example.Backend.service;
 
 import com.example.Backend.dto.request.CvRequest;
 import com.example.Backend.dto.request.CvUploadRequest;
+import com.example.Backend.dto.response.CvPreviewResponse;
 import com.example.Backend.dto.response.CvResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,4 +25,8 @@ public interface CvService {
     /// method lấy chi tiết 1 CV
     CvResponse getCvById(Long id);
     void deleteCv(Long id);
+    // Admin duyệt hoặc từ chối CV
+    CvResponse approveCv(Long cvId, boolean isApproved);
+
+    CvPreviewResponse previewCv(Long id);
 }
