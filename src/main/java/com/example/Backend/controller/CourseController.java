@@ -5,6 +5,7 @@ import com.example.Backend.dto.apiResponse.ApiResponse;
 import com.example.Backend.entity.Course;
 
 import com.example.Backend.service.CourseService;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -18,12 +19,14 @@ public class CourseController {
     private final CourseService courseService;
 
     @GetMapping("/courses")
+    @Operation(summary = "lấy danh sách khóa học - public ")
     public ApiResponse<List<Course>> getAll() {
         // Sử dụng ApiResponse.success(message, data)
         return ApiResponse.success("Lấy danh sách khóa học thành công", courseService.getAllCourses());
     }
 
     @GetMapping("/courses/{id}")
+    @Operation(summary = "lấy thông tin khóa học - public ")
     public ApiResponse<Course> getById(@PathVariable Integer id) {
         // Nếu chỉ muốn trả về data mà không cần message riêng
         return ApiResponse.success("Lấy thông tin khóa học thành công", courseService.getCourseById(id));
@@ -31,12 +34,14 @@ public class CourseController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/admin/courses")
+    @Operation(summary = "Tạo khóa học - role (admin) ")
     public ApiResponse<Course> create(@RequestBody Course course) {
         // Sử dụng ApiResponse.success(message, data, code) cho mã 201
         return ApiResponse.success("Tạo khóa học mới thành công", courseService.createCourse(course), 201);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Cập nhật khóa học - role (admin)")
     @PutMapping("/admin/courses/{id}")
     public ApiResponse<Course> update(@PathVariable Integer id, @RequestBody Course course) {
         return ApiResponse.success("Cập nhật khóa học thành công", courseService.updateCourse(id, course));
@@ -44,13 +49,15 @@ public class CourseController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/admin/courses/{id}")
+    @Operation(summary = "Xóa xóa học - role(admin)")
     public ApiResponse<String> delete(@PathVariable Integer id) {
         courseService.deleteCourse(id);
         return ApiResponse.success("Xóa khóa học thành công", "Đã xóa ID: " + id);
     }
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER')")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/admin/courses/{courseId}/teachers/{teacherId}")
+    @Operation(summary = "phân công giảng viên dạy khóa học - role(admin)")
     public ApiResponse<Object> addTeacher(
             @PathVariable Integer courseId,
             @PathVariable Long teacherId) {
@@ -61,6 +68,7 @@ public class CourseController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/courses/{courseId}/teachers/{teacherId}")
+    @Operation(summary = "xóa giảng viên khỏi khóa học - role(admin)")
     public ApiResponse<String> removeTeacher(
             @PathVariable Integer courseId,
             @PathVariable Long teacherId) {
