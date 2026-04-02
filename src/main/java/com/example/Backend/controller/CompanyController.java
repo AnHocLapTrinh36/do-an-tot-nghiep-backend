@@ -7,6 +7,7 @@ import com.example.Backend.dto.response.CompanyResponse;
 import com.example.Backend.service.CompanyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -46,5 +47,13 @@ public class CompanyController {
     public ApiResponse<Void> delete(@PathVariable Long id) {
         companyService.delete(id);
         return ApiResponse.success("Xóa công ty thành công");
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('COMPANY')")
+    public ApiResponse<CompanyResponse> getMyCompany(Authentication authentication) {
+        String email = authentication.getName();
+        CompanyResponse company = companyService.getMyCompany(email);
+        return ApiResponse.success("Lấy thông tin công ty thành công", company);
     }
 }

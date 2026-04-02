@@ -42,9 +42,7 @@ public class User {
     @OneToOne(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Admin admin;
     /// Map Company
-    /// Map Admin
-    @OneToOne(mappedBy = "user", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-    private Admin admin;
+
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

@@ -104,4 +104,11 @@ public class CompanyServiceImpl implements CompanyService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy "));
         companyReponsitory.delete(company);
     }
+
+    @Override
+    public CompanyResponse getMyCompany(String email) {
+        Company company = companyReponsitory.findByUserEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy công ty với email" + email));
+        return companyMapper.toResponse(company);
+    }
 }
