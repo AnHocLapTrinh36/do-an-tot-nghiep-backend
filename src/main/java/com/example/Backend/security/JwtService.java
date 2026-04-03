@@ -40,7 +40,7 @@ public class JwtService {
         claims.put("provider", user.getProvider().name());
         return Jwts.builder()
                 .setClaims(claims)                      // lưu role vào payload
-                .setSubject(user.getEmail())            // subject thường là email
+                .setSubject(user.getEmail())            // subject thường là email authen.getName()
                 .setIssuedAt(new Date())                // thời gian tạo
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)

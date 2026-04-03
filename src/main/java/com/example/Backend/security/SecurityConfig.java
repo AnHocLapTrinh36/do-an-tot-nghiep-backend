@@ -49,7 +49,7 @@ public class SecurityConfig {
                         // Public endpoints
                         .requestMatchers(
                                 "/api/students/{id}",
-                                "/api/test/public",
+                                "/api/projects/**",
                                 "/api/companies",
                                 "/api/companies/{id}",
                                 "/api/auth/register",

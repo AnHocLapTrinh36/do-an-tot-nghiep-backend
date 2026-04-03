@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -91,5 +93,20 @@ public class CloudinaryService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    public List<String> uploadMultipleImages(List<MultipartFile> files, String folder, String account) throws IOException {
+        List<String> imageUrls = new ArrayList<>();
+        if (files == null || files.isEmpty()) {
+            return imageUrls;
+        }
+
+        for (MultipartFile file : files) {
+            String url = uploadAvatar(file, folder, account); // Tái sử dụng hàm uploadImage ở trên
+            if (url != null) {
+                imageUrls.add(url);
+            }
+        }
+        return imageUrls;
     }
 }
