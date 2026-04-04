@@ -4,6 +4,7 @@ import com.example.Backend.dto.request.CvRequest;
 import com.example.Backend.dto.request.CvUploadRequest;
 import com.example.Backend.dto.response.CvPreviewResponse;
 import com.example.Backend.dto.response.CvResponse;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,4 +30,6 @@ public interface CvService {
     CvResponse approveCv(Long cvId, boolean isApproved);
 
     CvPreviewResponse previewCv(Long id);
+
+    Page<CvResponse> getPublicApprovedCvs(String keyword, String type, List<String> techs, int page, int size, String sortBy, String sortDir);
 }

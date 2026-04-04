@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -62,9 +63,9 @@ public class CvController {
     @GetMapping("/my-cvs")
     @PreAuthorize("hasRole('STUDENT')")
     @Operation(summary = "lấy danh danh sách cv của sinh viên hiện tại")
-    public ResponseEntity<List<CvResponse>> getMyCVs() {
+    public ResponseEntity<ApiResponse<List<CvResponse>>>getMyCVs() {
         List<CvResponse> response = cvService.getMyCvs();
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success("CV của sinh viên hiện tại",response));
     }
     //danh sách tất cả CV (role admin)
     @GetMapping
@@ -108,6 +109,28 @@ public class CvController {
         CvResponse response = cvService.approveCv(id, request.isApproved());
         String message = request.isApproved() ? "Duyệt CV thành công" : "Từ chối CV thành công";
         return ResponseEntity.ok(ApiResponse.success(message, response));
+    }
+
+    @GetMapping("/public")
+    @Operation(summary = "Danh sách CV public đã được duyệt (hỗ trợ search title, filter loại CV và nhiều kỹ năng/công nghệ)")
+    public ResponseEntity<ApiResponse<Page<CvResponse>>> getPublicApprovedCvs(
+            @RequestParam(value = "keyword", required = false) String keyword, // Tìm theo title CV
+            @RequestParam(value = "type", required = false) String type,       // Lọc theo loại: FORM hoặc UPLOAD
+            @RequestParam(value = "techs", required = false) List<String> techs, // Lọc theo danh sách kỹ năng (truyền mảng)
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,
+            @RequestParam(value = "sortDir", defaultValue = "desc") String sortDir
+    ) {
+        // Xử lý trường hợp front-end gửi mảng rỗng [] thì  chuyển thành null
+        // để Specification phía dưới bỏ qua điều kiện lọc này
+        if (techs != null && techs.isEmpty()) {
+            techs = null;
+        }
+        // Gọi Service
+        Page<CvResponse> response = cvService.getPublicApprovedCvs(keyword, type, techs, page, size, sortBy, sortDir);
+
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách CV công khai thành công", response));
     }
 
 }

@@ -48,8 +48,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers(
+                                "/api/cvs/{id}/preview",
                                 "/api/students/{id}",
                                 "/api/projects/**",
+                                "/api/cvs/public/**",
                                 "/api/companies",
                                 "/api/companies/{id}",
                                 "/api/auth/register",

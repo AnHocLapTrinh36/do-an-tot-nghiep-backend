@@ -1,6 +1,7 @@
 package com.example.Backend.service.Implement;
 
 import com.example.Backend.cloudinary.CloudinaryService;
+import com.example.Backend.config.CvSpecification;
 import com.example.Backend.dto.request.CvRequest;
 import com.example.Backend.dto.request.CvUploadRequest;
 import com.example.Backend.dto.response.CvFileResponse;
@@ -15,6 +16,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.coyote.BadRequestException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -30,7 +36,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class CvServiceImpl implements CvService {
+public class    CvServiceImpl implements CvService {
 
     private final CvRepository cvRepository;
     private final CloudinaryService cloudinaryService;
@@ -333,6 +339,24 @@ public class CvServiceImpl implements CvService {
                 .build();
     }
 
+
+    @Override
+    public Page<CvResponse> getPublicApprovedCvs(String keyword, String type, List<String> techs, int page, int size, String sortBy, String sortDir) {
+
+        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name())
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        // Gọi Specification vừa tạo
+        Specification<Cv> spec = CvSpecification.filterPublicApprovedCvs(keyword, type, techs);
+
+        // findAll của JpaSpecificationExecutor có hỗ trợ truyền Specification và Pageable
+        return cvRepository.findAll(spec, pageable)
+                .map(this::toResponse);
+    }
+
     /**
      * Hàm chuyển đổi chung Cv → CvResponse
      */
@@ -369,8 +393,8 @@ public class CvServiceImpl implements CvService {
                 .createdAt(cv.getCreatedAt())
                 .updatedAt(cv.getUpdatedAt())
                 .cvFile(cvFileResponse)
+                .downloadCount(cv.getDownloadCount())
+                .viewCount(cv.getViewCount())
                 .build();
     }
-
-
 }

@@ -1,6 +1,7 @@
 package com.example.Backend.dto.response;
 import com.example.Backend.entity.CVType;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.persistence.Column;
 import lombok.Builder;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -28,4 +29,8 @@ public class CvResponse {
     // đối tượng chứa thông tin file (sẽ null nếu type = FORM)
     @JsonProperty("cv_file")
     private CvFileResponse cvFile;
+    @JsonProperty("view_count")
+    private Integer viewCount = 0;
+    @JsonProperty("download_count")
+    private Integer downloadCount = 0;
 }
