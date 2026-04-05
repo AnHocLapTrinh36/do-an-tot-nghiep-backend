@@ -36,15 +36,15 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class    CvServiceImpl implements CvService {
+public class CvServiceImpl implements CvService {
 
     private final CvRepository cvRepository;
     private final CloudinaryService cloudinaryService;
     private final ObjectMapper objectMapper;
     private final StudentRepository studentRepository;
     private final CvFileRepository cvFileRepository;
-    private  final AdminRepository adminRepository;
-    private  final UserRepository userRepository;
+    private final AdminRepository adminRepository;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional
@@ -82,7 +82,7 @@ public class    CvServiceImpl implements CvService {
         cv.setTitle(request.getTitle());
         cv.setType(CVType.FORM);
         cv.setIsPublic(false);
-        cv.setIsApproved(false);
+        cv.setStatus(Status.PENDING); // Set Status bằng Enum
 
         try {
             String jsonString = objectMapper.writeValueAsString(contentMap);
@@ -128,7 +128,7 @@ public class    CvServiceImpl implements CvService {
         cv.setType(CVType.UPLOAD);
         cv.setContentJson(null);
         cv.setIsPublic(false);
-        cv.setIsApproved(false);
+        cv.setStatus(Status.PENDING); // Set Status bằng Enum
         cv.setCreatedAt(LocalDateTime.now());
         cv.setUpdatedAt(LocalDateTime.now());
 
@@ -153,7 +153,8 @@ public class    CvServiceImpl implements CvService {
     @Override
     @Transactional
     public CvResponse updateCvFromForm(Long cvId, CvRequest request, MultipartFile avatarFile) {
-        Long currentStudentId = 11L; // Mock - sau này thay bằng lấy từ SecurityContext
+        // FIXME: Chỗ này đang mock, cần lấy từ SecurityContext thật
+        Long currentStudentId = 11L;
 
         Cv cv = cvRepository.findByIdAndStudentId(cvId, currentStudentId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy CV hoặc bạn không có quyền chỉnh sửa"));
@@ -184,6 +185,12 @@ public class    CvServiceImpl implements CvService {
         }
 
         cv.setTitle(request.getTitle());
+
+        // Khi update xong, tự động đẩy về PENDING và gỡ Public
+        cv.setStatus(Status.PENDING);
+        cv.setIsPublic(false);
+        cv.setApprovedBy(null);
+
         try {
             cv.setContentJson(objectMapper.writeValueAsString(newContentMap));
         } catch (JsonProcessingException e) {
@@ -216,6 +223,7 @@ public class    CvServiceImpl implements CvService {
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
+
     @Override
     public CvResponse getCvById(Long id) {
         Cv cv = cvRepository.findById(id)
@@ -260,7 +268,7 @@ public class    CvServiceImpl implements CvService {
 
     @Override
     @Transactional
-    public CvResponse approveCv(Long cvId, boolean isApproved) {
+    public CvResponse approveCv(Long cvId, Status status) {
         //Lấy thông tin CV cần duyệt
         Cv cv = cvRepository.findById(cvId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy CV với ID: " + cvId));
@@ -270,16 +278,19 @@ public class    CvServiceImpl implements CvService {
         Admin currentAdmin = adminRepository.findByUser_Email(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin Admin thao tác"));
 
-        // Cập nhật trạng thái duyệt
-        cv.setIsApproved(isApproved);
-        if (isApproved) {
+        // Cập nhật trạng thái bằng Enum
+        cv.setStatus(status);
+
+        if (status == Status.APPROVED) {
             // Nếu duyệt -> Cập nhật người duyệt và bật public cho CV
-            cv.setApprovedBy(currentAdmin.getId());  //id admin duyệt cv
+            cv.setApprovedBy(currentAdmin.getId());
             cv.setIsPublic(true);
         } else {
+            // Từ chối hoặc trả về Pending thì gỡ Public
             cv.setApprovedBy(null);
             cv.setIsPublic(false);
         }
+
         Cv updatedCv = cvRepository.save(cv);
         return toResponse(updatedCv);
     }
@@ -289,7 +300,7 @@ public class    CvServiceImpl implements CvService {
     public CvPreviewResponse previewCv(Long id) {
         Cv cv = cvRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy CV với ID: " + id));
-        // Lấy thông tin User đang đăng nhập
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
 
@@ -301,24 +312,23 @@ public class    CvServiceImpl implements CvService {
             User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> new ResourceNotFoundException("User không tồn tại"));
 
-            // Nếu là sinh viên, kiểm tra xem có phải chủ sở hữu không
             if (user.getRole() == RoleType.STUDENT) {
                 if (!cv.getStudent().getUser().getEmail().equals(email)) {
                     // Không phải chủ sở hữu -> Chỉ xem được nếu CV đã public và approved
-                    if (!cv.getIsPublic() || !cv.getIsApproved()) {
+                    if (!cv.getIsPublic() || cv.getStatus() != Status.APPROVED) {
                         throw new RuntimeException("Bạn không có quyền xem CV này");
                     }
                 }
             }
-            // Nếu là Company/Nhà tuyển dụng -> Chỉ xem được CV public và approved
             else if (user.getRole() == RoleType.COMPANY) {
-                if (!cv.getIsPublic() || !cv.getIsApproved()) {
+                if (!cv.getIsPublic() || cv.getStatus() != Status.APPROVED) {
                     throw new RuntimeException("CV này chưa được công khai");
                 }
             }
         }
-        cvRepository.save(cv);
-        //Chuẩn bị dữ liệu trả về
+
+        cvRepository.save(cv); // Lưu ViewCount nếu có logic tăng view
+
         Object previewData = null;
 
         if (cv.getType() == CVType.FORM && cv.getContentJson() != null) {
@@ -329,16 +339,15 @@ public class    CvServiceImpl implements CvService {
                 throw new RuntimeException("Dữ liệu CV Form bị lỗi định dạng");
             }
         } else if (cv.getType() == CVType.UPLOAD && cv.getCvFile() != null) {
-            // Nếu là file upload thì trả về link PDF Cloudinary
             previewData = cv.getCvFile().getFilePath();
         }
+
         return CvPreviewResponse.builder()
                 .id(cv.getId())
                 .type(cv.getType().name())
                 .data(previewData)
                 .build();
     }
-
 
     @Override
     public Page<CvResponse> getPublicApprovedCvs(String keyword, String type, List<String> techs, int page, int size, String sortBy, String sortDir) {
@@ -349,10 +358,8 @@ public class    CvServiceImpl implements CvService {
 
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        // Gọi Specification vừa tạo
         Specification<Cv> spec = CvSpecification.filterPublicApprovedCvs(keyword, type, techs);
 
-        // findAll của JpaSpecificationExecutor có hỗ trợ truyền Specification và Pageable
         return cvRepository.findAll(spec, pageable)
                 .map(this::toResponse);
     }
@@ -388,7 +395,7 @@ public class    CvServiceImpl implements CvService {
                 .type(cv.getType().name())
                 .contentJson(contentJsonObj)
                 .isPublic(cv.getIsPublic())
-                .isApproved(cv.getIsApproved())
+                .status(cv.getStatus().name()) // Trả về Status thay vì isApproved
                 .approvedBy(cv.getApprovedBy())
                 .createdAt(cv.getCreatedAt())
                 .updatedAt(cv.getUpdatedAt())

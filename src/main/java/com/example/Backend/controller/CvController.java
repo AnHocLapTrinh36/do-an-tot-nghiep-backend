@@ -6,6 +6,7 @@ import com.example.Backend.dto.request.CvUploadRequest;
 import com.example.Backend.dto.request.admin.AdminApprovedCv;
 import com.example.Backend.dto.response.CvPreviewResponse;
 import com.example.Backend.dto.response.CvResponse;
+import com.example.Backend.entity.Status;
 import com.example.Backend.service.CvService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -106,8 +107,15 @@ public class CvController {
     public ResponseEntity<ApiResponse<CvResponse>> approveCv(
             @PathVariable Long id,
             @RequestBody AdminApprovedCv request) {
-        CvResponse response = cvService.approveCv(id, request.isApproved());
-        String message = request.isApproved() ? "Duyệt CV thành công" : "Từ chối CV thành công";
+        Status newStatus = request.getStatus();
+
+        if (newStatus == null) {
+            throw new IllegalArgumentException("Trạng thái (status) không được để trống!");
+        }
+        CvResponse response = cvService.approveCv(id, newStatus);
+        String message = newStatus == Status.APPROVED ? "Duyệt CV thành công"
+                : newStatus == Status.REJECTED ? "Từ chối CV thành công"
+                : "Đã chuyển về trạng thái chờ duyệt";
         return ResponseEntity.ok(ApiResponse.success(message, response));
     }
 

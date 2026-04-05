@@ -32,8 +32,10 @@ public class Cv {
     @Column(name = "content_json", columnDefinition = "TEXT")
     private String contentJson;
 
-    @Column(name = "is_approved")
-    private Boolean isApproved = false;
+    // Thêm dòng mới:
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private Status status = Status.PENDING;
 
     @Column(name = "is_public")
     private Boolean isPublic = false;

@@ -13,7 +13,6 @@ public class AdminUpdateStudentRequest {
 
     @NotBlank(message = "Trạng thái không được để trống")
     private String status;
-
     // GPA thang 10
     @DecimalMin(value = "0.0", message = "GPA không được nhỏ hơn 0")
     @DecimalMax(value = "10.0", message = "GPA không được lớn hơn 10")

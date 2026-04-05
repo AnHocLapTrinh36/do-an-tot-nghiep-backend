@@ -4,6 +4,7 @@ import com.example.Backend.dto.request.CvRequest;
 import com.example.Backend.dto.request.CvUploadRequest;
 import com.example.Backend.dto.response.CvPreviewResponse;
 import com.example.Backend.dto.response.CvResponse;
+import com.example.Backend.entity.Status;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,7 +28,7 @@ public interface CvService {
     CvResponse getCvById(Long id);
     void deleteCv(Long id);
     // Admin duyệt hoặc từ chối CV
-    CvResponse approveCv(Long cvId, boolean isApproved);
+    CvResponse approveCv(Long cvId, Status status);
 
     CvPreviewResponse previewCv(Long id);
 

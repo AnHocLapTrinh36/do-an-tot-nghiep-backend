@@ -1,5 +1,6 @@
 package com.example.Backend.dto.response;
 import com.example.Backend.entity.CVType;
+import com.example.Backend.entity.Status;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Column;
 import lombok.Builder;
@@ -18,15 +19,14 @@ public class CvResponse {
     private Object contentJson; // Trả về dạng Object để React
     @JsonProperty("is_public")
     private Boolean isPublic;
-    @JsonProperty("is_approved")
-    private Boolean isApproved;
+    @JsonProperty("status")
+    private String status;
     @JsonProperty("approved_by")
     private Long approvedBy;
     @JsonProperty("created_at")
     private LocalDateTime createdAt;
     @JsonProperty("updated_at")
     private LocalDateTime updatedAt;
-    // đối tượng chứa thông tin file (sẽ null nếu type = FORM)
     @JsonProperty("cv_file")
     private CvFileResponse cvFile;
     @JsonProperty("view_count")
