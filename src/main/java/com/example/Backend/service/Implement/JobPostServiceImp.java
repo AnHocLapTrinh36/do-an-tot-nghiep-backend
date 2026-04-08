@@ -40,18 +40,19 @@ public class JobPostServiceImp implements JobPostService {
         if (!"APPROVED".equals(company.getStatus().toString())) {
             throw new RuntimeException("Tài khoản doanh nghiệp chưa được xác thực");
         }
-        JobPost job = new JobPost();
-        job.setTitle(request.getTitle());
-        job.setDescription(request.getDescription());
-        job.setRequirements(request.getRequirements());
-        job.setSalary(request.getSalary());
-        job.setStartDay(request.getStartDay());
-        job.setEndDay(request.getEndDay());
-        job.setCompany(company);
-        job.setJobType(request.getJobType());
-        job.setWorkLocation(request.getWorkLocation());
-        job.setPostedAt(LocalDateTime.now());
-        job.setStatus(JobStatus.PENDING);
+        JobPost job = JobPost.builder()
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .requirements(request.getRequirements())
+                .salary(request.getSalary())
+                .startDay(request.getStartDay())
+                .endDay(request.getEndDay())
+                .company(company)
+                .jobType(request.getJobType())
+                .workLocation(request.getWorkLocation())
+                .postedAt(LocalDateTime.now())
+                .status(JobStatus.PENDING)
+                .build();
         handleJdFileUpload(request, job);
         return jobMapper.toResponse(jobPostRepository.save(job));
     }
