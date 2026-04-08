@@ -33,4 +33,6 @@ public class CvResponse {
     private Integer viewCount = 0;
     @JsonProperty("download_count")
     private Integer downloadCount = 0;
+    @JsonProperty("admin_note")
+    private String adminNote;
 }
