@@ -51,6 +51,8 @@ public class SecurityConfig {
                                 "/api/students/{id}",
                                 "/api/projects/**",
                                 "/api/companies",
+                                "/api/jobs/active",
+                                "/api/jobs/{id}",
                                 "/api/companies/{id}",
                                 "/api/auth/register",
                                 "/api/auth/user/**",

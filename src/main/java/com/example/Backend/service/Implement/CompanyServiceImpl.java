@@ -10,7 +10,7 @@ import com.example.Backend.entity.CompanyStatus;
 import com.example.Backend.exception.ResourceNotFoundException;
 import com.example.Backend.mapper.CompanyMapper;
 import com.example.Backend.repository.AdminRepository;
-import com.example.Backend.repository.CompanyReponsitory;
+import com.example.Backend.repository.CompanyRepository;
 import com.example.Backend.service.CompanyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,7 +22,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class CompanyServiceImpl implements CompanyService {
-    private final CompanyReponsitory companyReponsitory;
+    private final CompanyRepository companyReponsitory;
     private final CompanyMapper companyMapper;
     private final AdminRepository adminRepository;
     private final CloudinaryService cloudinaryService;

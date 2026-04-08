@@ -2,9 +2,12 @@ package com.example.Backend.controller;
 
 import com.example.Backend.dto.apiResponse.ApiResponse;
 import com.example.Backend.dto.request.CompanyUpdateRequest;
+import com.example.Backend.dto.request.JobRequest;
 import com.example.Backend.dto.request.admin.AdminUpdateCompanyRequest;
 import com.example.Backend.dto.response.CompanyResponse;
+import com.example.Backend.dto.response.JobResponse;
 import com.example.Backend.service.CompanyService;
+import com.example.Backend.service.JobPostService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,6 +21,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CompanyController {
     private final CompanyService companyService;
+    private final JobPostService jobPostService;
 
     @GetMapping
     @Operation(summary = "lấy danh sách công ty - public ")
@@ -62,5 +66,28 @@ public class CompanyController {
         String email = authentication.getName();
         CompanyResponse company = companyService.getMyCompany(email);
         return ApiResponse.success("Lấy thông tin công ty thành công", company);
+    }
+
+    @PostMapping(value = "/jobs", consumes = "multipart/form-data")
+    @PreAuthorize("hasRole('COMPANY')")
+    @Operation(summary = "Doanh nghiệp đăng tin mới - role(company)")
+    public ApiResponse<JobResponse> createJob(@ModelAttribute JobRequest request, Authentication auth) {
+        return ApiResponse.success("Đăng tin thành công, vui lòng chờ admin duyệt", jobPostService.createJob(request, auth.getName()));
+    }
+
+    @PutMapping(value = "/jobs/{id}", consumes = "multipart/form-data")
+    @PreAuthorize("hasRole('COMPANY')")
+    @Operation(summary = "Cập nhật tin tuyển dụng - role(company)")
+    public ApiResponse<JobResponse> updateJob(@PathVariable Long id, @ModelAttribute JobRequest request, Authentication auth) {
+
+        return ApiResponse.success("Cập nhật thành công", jobPostService.updateJob(id, request, auth.getName()));
+    }
+
+    @PatchMapping("/jobs/{id}/close")
+    @PreAuthorize("hasRole('COMPANY')or hasRole('ADMIN')")
+    @Operation(summary = "Đóng tin tuyển dụng sớm - role(admin;company)")
+    public ApiResponse<String> closeJob(@PathVariable Long id) {
+        jobPostService.closeJob(id);
+        return ApiResponse.success("Đã đóng tin tuyển dụng");
     }
 }

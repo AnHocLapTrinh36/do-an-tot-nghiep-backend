@@ -1,9 +1,16 @@
 package com.example.Backend.controller;
 
 import com.example.Backend.dto.apiResponse.ApiResponse;
+import com.example.Backend.dto.request.FavoritesRequest;
 import com.example.Backend.dto.request.StudentUpdateRequest;
 import com.example.Backend.dto.request.admin.AdminUpdateStudentRequest;
+import com.example.Backend.dto.response.JobFavoriteResponse;
+import com.example.Backend.dto.response.JobResponse;
 import com.example.Backend.dto.response.StudentResponse;
+import com.example.Backend.entity.JobFavorite;
+import com.example.Backend.repository.JobFavoriteRepository;
+import com.example.Backend.service.JobFavoriteService;
+import com.example.Backend.service.JobPostService;
 import com.example.Backend.service.StudentService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +27,9 @@ import java.util.List;
 public class StudentController {
 
     private final StudentService studentService;
+    private final JobPostService jobPostService;
+    private final JobFavoriteService jobFavoriteService;
+    private final JobFavoriteRepository jobFavoriteRepository;
 
     // Lấy tất cả sinh viên
     @GetMapping
@@ -72,8 +82,9 @@ public class StudentController {
         StudentResponse updated = studentService.updateMyProfile(request);
         return ApiResponse.success("Cập nhật thông tin cá nhân thành công", updated);
     }
+
     /// page profile
-    ///api GET: sinh viên xem thông tin của mình (các trường của student + full_name)
+    /// api GET: sinh viên xem thông tin của mình (các trường của student + full_name)
     @GetMapping("/me")
     @PreAuthorize("hasRole('STUDENT')")
     @Operation(summary = "lấy thông tin đầy đủ của student")
@@ -83,4 +94,25 @@ public class StudentController {
         return ApiResponse.success("Lấy thông tin cá nhân thành công", student);
     }
 
+    @PostMapping("/favorites/{jobId}")
+    @PreAuthorize("hasRole('STUDENT')")
+    @Operation(summary = "Bật/Tắt trạng thái yêu thích tin tuyển dụng")
+    public ApiResponse<Object> toggleFavorite(
+            @PathVariable Long jobId,
+            @RequestBody FavoritesRequest request,
+            Authentication auth) {
+        String note = request != null ? request.getNote() : null;
+        Object result = jobFavoriteService.toggleFavorite(jobId, auth.getName(), note);
+        if (result instanceof String) {
+            return ApiResponse.success(result.toString(), null);
+        }
+        return ApiResponse.success("Đã thêm vào danh sách yêu thích", result);
+    }
+
+    @GetMapping("/favorites")
+    @PreAuthorize("hasRole('STUDENT')")
+    @Operation(summary = "Hiển thị các tin đã yêu thích")
+    public ApiResponse<List<JobFavoriteResponse>> getMyFavorites(Authentication auth) {
+        return ApiResponse.success("Danh sách tin đã lưu", jobFavoriteService.getMyFavorites(auth.getName()));
+    }
 }

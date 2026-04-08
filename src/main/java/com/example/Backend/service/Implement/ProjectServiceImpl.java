@@ -6,7 +6,7 @@ import com.example.Backend.dto.request.admin.AdminApprovedProject;
 import com.example.Backend.dto.response.ProjectResponse;
 import com.example.Backend.entity.*;
 import com.example.Backend.mapper.ProjectMapper;
-import com.example.Backend.repository.CourseReponsitory;
+import com.example.Backend.repository.CourseRepository;
 import com.example.Backend.repository.ProjectRepository;
 import com.example.Backend.repository.StudentRepository;
 import com.example.Backend.repository.TechnologyRepository;
@@ -36,7 +36,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectRepository projectRepository;
     private final TechnologyRepository technologyRepository;
     private final StudentRepository studentRepository;
-    private final CourseReponsitory courseRepository;
+    private final CourseRepository courseRepository;
     private final ProjectMapper projectMapper;
     private final CloudinaryService cloudinaryService;
 
@@ -216,6 +216,7 @@ public class ProjectServiceImpl implements ProjectService {
         }
         projectRepository.save(project);
     }
+
     @Override
     public Page<ProjectResponse> getPublicProjects(String title, Long technologyId, int page, int size) {
 
