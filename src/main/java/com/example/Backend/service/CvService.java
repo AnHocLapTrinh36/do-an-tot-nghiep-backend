@@ -28,7 +28,7 @@ public interface CvService {
     CvResponse getCvById(Long id);
     void deleteCv(Long id);
     // Admin duyệt hoặc từ chối CV
-    CvResponse approveCv(Long cvId, Status status);
+    CvResponse approveCv(Long cvId, Status status, String adminNote);
 
     CvPreviewResponse previewCv(Long id);
 

@@ -268,7 +268,7 @@ public class CvServiceImpl implements CvService {
 
     @Override
     @Transactional
-    public CvResponse approveCv(Long cvId, Status status) {
+    public CvResponse approveCv(Long cvId, Status status, String adminNote) {
         //Lấy thông tin CV cần duyệt
         Cv cv = cvRepository.findById(cvId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy CV với ID: " + cvId));
@@ -285,10 +285,12 @@ public class CvServiceImpl implements CvService {
             // Nếu duyệt -> Cập nhật người duyệt và bật public cho CV
             cv.setApprovedBy(currentAdmin.getId());
             cv.setIsPublic(true);
+            cv.setAdminNote(null);
         } else {
             // Từ chối hoặc trả về Pending thì gỡ Public
             cv.setApprovedBy(null);
             cv.setIsPublic(false);
+            cv.setAdminNote(adminNote);
         }
 
         Cv updatedCv = cvRepository.save(cv);
@@ -399,6 +401,7 @@ public class CvServiceImpl implements CvService {
                 .approvedBy(cv.getApprovedBy())
                 .createdAt(cv.getCreatedAt())
                 .updatedAt(cv.getUpdatedAt())
+                .adminNote(cv.getAdminNote())
                 .cvFile(cvFileResponse)
                 .downloadCount(cv.getDownloadCount())
                 .viewCount(cv.getViewCount())

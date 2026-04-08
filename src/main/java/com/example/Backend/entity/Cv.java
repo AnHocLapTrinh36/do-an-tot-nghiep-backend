@@ -49,6 +49,9 @@ public class Cv {
     @Column(name = "download_count")
     private Integer downloadCount = 0;
 
+    @Column(name = "admin_note")
+    private String adminNote;
+
     @OneToOne(mappedBy = "cv", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private CvFile cvFile;
 

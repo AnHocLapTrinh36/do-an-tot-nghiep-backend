@@ -100,6 +100,7 @@ public class CvController {
         CvPreviewResponse response = cvService.previewCv(id);
         return ResponseEntity.ok(ApiResponse.success("Lấy dữ liệu preview thành công", response));
     }
+
     ///admin duyệt Cv của sinh viên (role admin)
     @PutMapping("/{id}/approve")
     @PreAuthorize("hasRole('ADMIN')")
@@ -108,11 +109,15 @@ public class CvController {
             @PathVariable Long id,
             @RequestBody AdminApprovedCv request) {
         Status newStatus = request.getStatus();
+        String adminNote = request.getAdminNote();
 
         if (newStatus == null) {
             throw new IllegalArgumentException("Trạng thái (status) không được để trống!");
         }
-        CvResponse response = cvService.approveCv(id, newStatus);
+        if (newStatus == Status.REJECTED && (adminNote == null || adminNote.trim().isEmpty())) {
+            throw new IllegalArgumentException("Vui lòng nhập lý do từ chối CV (admin_note)!");
+        }
+        CvResponse response = cvService.approveCv(id, newStatus, adminNote);
         String message = newStatus == Status.APPROVED ? "Duyệt CV thành công"
                 : newStatus == Status.REJECTED ? "Từ chối CV thành công"
                 : "Đã chuyển về trạng thái chờ duyệt";
