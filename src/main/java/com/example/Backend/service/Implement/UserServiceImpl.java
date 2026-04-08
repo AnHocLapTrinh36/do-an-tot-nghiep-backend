@@ -11,7 +11,7 @@ import com.example.Backend.repository.AdminRepository;
 
 import com.example.Backend.mapper.CompanyMapper;
 
-import com.example.Backend.repository.CompanyReponsitory;
+import com.example.Backend.repository.CompanyRepository;
 
 import com.example.Backend.repository.TeacherRepository;
 import com.example.Backend.security.JwtService;
@@ -49,7 +49,7 @@ public class UserServiceImpl implements UserService {
     private final AdminMapper adminMapper;
 
     private final CompanyMapper companyMapper;
-    private final CompanyReponsitory companyReponsitory;
+    private final CompanyRepository companyReponsitory;
 
     @Override
     @Transactional

@@ -53,6 +53,8 @@ public class SecurityConfig {
                                 "/api/projects/**",
                                 "/api/cvs/public/**",
                                 "/api/companies",
+                                "/api/jobs/active",
+                                "/api/jobs/{id}",
                                 "/api/companies/{id}",
                                 "/api/auth/register",
                                 "/api/auth/user/**",

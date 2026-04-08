@@ -1,0 +1,147 @@
+package com.example.Backend.service.Implement;
+
+import com.example.Backend.cloudinary.CloudinaryService;
+import com.example.Backend.dto.request.JobRequest;
+import com.example.Backend.dto.response.JobResponse;
+import com.example.Backend.entity.Company;
+import com.example.Backend.entity.JobPost;
+import com.example.Backend.entity.JobStatus;
+import com.example.Backend.entity.User;
+import com.example.Backend.exception.ResourceNotFoundException;
+import com.example.Backend.mapper.JobMapper;
+import com.example.Backend.repository.CompanyRepository;
+import com.example.Backend.repository.JobPostRepository;
+import com.example.Backend.repository.UserRepository;
+import com.example.Backend.service.JobPostService;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class JobPostServiceImp implements JobPostService {
+
+    private final CompanyRepository companyReponsitory;
+    private final UserRepository userRepository;
+    private final CloudinaryService cloudinaryService;
+    private final JobMapper jobMapper;
+    private final JobPostRepository jobPostRepository;
+
+    @Override
+    @Transactional
+    public JobResponse createJob(JobRequest request, String email) {
+        Company company = companyReponsitory.findByUserEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy doanh nghiệp"));
+        //chi cho phep dang tin neu cong ty duoc duyet
+        if (!"APPROVED".equals(company.getStatus().toString())) {
+            throw new RuntimeException("Tài khoản doanh nghiệp chưa được xác thực");
+        }
+        JobPost job = new JobPost();
+        job.setTitle(request.getTitle());
+        job.setDescription(request.getDescription());
+        job.setRequirements(request.getRequirements());
+        job.setSalary(request.getSalary());
+        job.setStartDay(request.getStartDay());
+        job.setEndDay(request.getEndDay());
+        job.setCompany(company);
+        job.setJobType(request.getJobType());
+        job.setWorkLocation(request.getWorkLocation());
+        job.setPostedAt(LocalDateTime.now());
+        job.setStatus(JobStatus.PENDING);
+        handleJdFileUpload(request, job);
+        return jobMapper.toResponse(jobPostRepository.save(job));
+    }
+
+    @Override
+    @Transactional
+    public JobResponse updateJob(Long id, JobRequest request, String email) {
+
+        JobPost job = jobPostRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tin tuyển dụng"));
+        if (!job.getCompany().getUser().getEmail().equals(email)) {
+            throw new RuntimeException("Bạn không có quyền chỉnh sửa tin tuyển dụng này!");
+        }
+        //nếu tin đã được duyêt mà sửa nội dung -> Bắt admin duyệt lại
+        if (job.getStatus() == JobStatus.APPROVED) {
+            job.setStatus(JobStatus.PENDING);
+        }
+        job.setTitle(request.getTitle());
+        job.setDescription(request.getDescription());
+        job.setRequirements(request.getRequirements());
+        job.setSalary(request.getSalary());
+        job.setStartDay(request.getStartDay());
+        job.setEndDay(request.getEndDay());
+        job.setJobType(request.getJobType());
+        job.setWorkLocation(request.getWorkLocation());
+        handleJdFileUpload(request, job);
+        return jobMapper.toResponse(jobPostRepository.save(job));
+    }
+
+    @Override
+    @Transactional
+    public void closeJob(Long id) {
+        JobPost job = jobPostRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tin tuyển dụng"));
+        job.setStatus(JobStatus.CLOSE);
+        jobPostRepository.save(job);
+    }
+
+    @Override
+    @Transactional
+    public List<JobResponse> getPendingJobsForAdmin() {
+        List<JobPost> pendingJobs = jobPostRepository.findByStatus(JobStatus.PENDING);
+        return jobMapper.toResponseList(pendingJobs);
+    }
+
+    @Override
+    @Transactional
+    public JobResponse approveJob(Long id, String action, String adminEmail) {
+        JobPost job = jobPostRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tin"));
+        User admin = userRepository.findByEmail(adminEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy admin thực hiện"));
+        //kiem tra xem phai Approve khonh
+        if ("APPROVE".equalsIgnoreCase(action)) {
+            job.setStatus(JobStatus.APPROVED);
+        } else {
+            job.setStatus(JobStatus.REJECTED);
+        }
+        job.setApprovedBy(admin);
+        job.setApprovedAt(LocalDateTime.now());
+        return jobMapper.toResponse(jobPostRepository.save(job));
+    }
+
+    @Override
+    @Transactional
+    public List<JobResponse> getActiveJobs() {
+        List<JobPost> actionJobs = jobPostRepository.findActiveJobs();
+        return jobMapper.toResponseList(actionJobs);
+    }
+
+    @Override
+    @Transactional
+    public JobResponse getJobDetail(Long id) {
+        JobPost job = jobPostRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tin tuyển dụng"));
+        Integer currentView = job.getViewCount() != null ? job.getViewCount() : 0;
+        job.setViewCount(currentView + 1);
+        return jobMapper.toResponse(jobPostRepository.save(job));
+    }
+
+    private void handleJdFileUpload(JobRequest request, JobPost job) {
+        System.out.println("JD FILE: " + request.getJdFile());
+        if (request.getJdFile() != null && !request.getJdFile().isEmpty()) {
+            try {
+                // Upload lên thư mục "job_jds" trên Cloudinary với account "1"
+                String fileUrl = cloudinaryService.uploadFile(request.getJdFile(), "job_jds", "2");
+                job.setJdFile(fileUrl);
+            } catch (IOException e) {
+                throw new RuntimeException("Lỗi upload file JD lên Cloudinary: " + e.getMessage());
+            }
+        }
+    }
+}

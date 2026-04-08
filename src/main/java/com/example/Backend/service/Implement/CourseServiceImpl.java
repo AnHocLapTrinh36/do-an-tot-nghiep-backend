@@ -2,7 +2,7 @@ package com.example.Backend.service.Implement;
 
 import com.example.Backend.entity.Course;
 import com.example.Backend.entity.Teacher;
-import com.example.Backend.repository.CourseReponsitory;
+import com.example.Backend.repository.CourseRepository;
 import com.example.Backend.repository.TeacherRepository;
 
 import com.example.Backend.service.CourseService;
@@ -15,7 +15,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class CourseServiceImpl implements CourseService {
-    private final CourseReponsitory courseRepository;
+    private final CourseRepository courseRepository;
     private final TeacherRepository teacherRepository;
 
     @Override
