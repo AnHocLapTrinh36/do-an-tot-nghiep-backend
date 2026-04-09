@@ -1,5 +1,6 @@
 package com.example.Backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -29,12 +30,13 @@ public class Student {
             unique = true,
             foreignKey = @ForeignKey(name = "fk_student_user")
     )
+    @JsonManagedReference
     private User user;
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Cv> cvs;
 
-    @Column(unique = true, length = 20,updatable = false)
+    @Column(unique = true, length = 20, updatable = false)
     private String mssv;
 
     @Column(precision = 3, scale = 2)
@@ -58,6 +60,6 @@ public class Student {
     private String status;
 
     @CreationTimestamp
-    @Column(name = "created_at",updatable = false)
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 }

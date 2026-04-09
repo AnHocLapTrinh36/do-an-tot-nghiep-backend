@@ -1,15 +1,21 @@
 package com.example.Backend.controller;
 
 import com.example.Backend.dto.apiResponse.ApiResponse;
+import com.example.Backend.dto.request.ApplicationReviewRequest;
 import com.example.Backend.dto.request.CompanyUpdateRequest;
 import com.example.Backend.dto.request.JobRequest;
 import com.example.Backend.dto.request.admin.AdminUpdateCompanyRequest;
+import com.example.Backend.dto.response.ApplicantResponse;
 import com.example.Backend.dto.response.CompanyResponse;
+import com.example.Backend.dto.response.JobApplicationResponse;
 import com.example.Backend.dto.response.JobResponse;
+import com.example.Backend.entity.JobApplication;
 import com.example.Backend.service.CompanyService;
+import com.example.Backend.service.JobApplicationService;
 import com.example.Backend.service.JobPostService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +28,7 @@ import java.util.List;
 public class CompanyController {
     private final CompanyService companyService;
     private final JobPostService jobPostService;
+    private final JobApplicationService jobApplicationService;
 
     @GetMapping
     @Operation(summary = "lấy danh sách công ty - public ")
@@ -89,5 +96,35 @@ public class CompanyController {
     public ApiResponse<String> closeJob(@PathVariable Long id) {
         jobPostService.closeJob(id);
         return ApiResponse.success("Đã đóng tin tuyển dụng");
+    }
+
+    @GetMapping("/jobs/{id}/applications")
+    @PreAuthorize("hasRole('COMPANY')")
+    @Operation(summary = "lấy danh sách các đơn ưngs tuyển của 1 bài viết - role(company)")
+    public ResponseEntity<ApiResponse<List<ApplicantResponse>>> getJobApplications(@PathVariable Long id) {
+        List<ApplicantResponse> applicants = jobApplicationService.getApplicantsByJob(id);
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách ứng viên thành công", applicants));
+    }
+
+    @GetMapping("/jobs/{id}/test")
+    @PreAuthorize("hasRole('COMPANY')")
+    @Operation(summary = "lấy danh sách các đơn ưngs tuyển của 1 bài viết - role(company)")
+    public ResponseEntity<ApiResponse<List<JobApplication>>> test(@PathVariable Long id) {
+        List<JobApplication> applicants = jobApplicationService.test(id);
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách ứng viên thành công", applicants));
+    }
+
+    @PatchMapping("/applications/{application_id}/status")
+    @PreAuthorize("hasRole('COMPANY')")
+    @Operation(summary = "Doanh nghiệp đánh giá hồ sơ ứng tuyển - role(company)")
+    public ResponseEntity<ApiResponse<JobApplicationResponse>> reviewApplication(
+            @PathVariable("application_id") Long id,
+            @RequestBody ApplicationReviewRequest request) {
+
+        // Gọi service xử lý
+        JobApplicationResponse response = jobApplicationService.reviewApplication(id, request);
+
+        // Trả về bọc trong ApiResponse như các API khác của bạn
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái ứng viên thành công", response));
     }
 }
