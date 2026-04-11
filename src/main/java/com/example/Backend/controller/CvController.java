@@ -3,9 +3,12 @@ package com.example.Backend.controller;
 import com.example.Backend.dto.apiResponse.ApiResponse;
 import com.example.Backend.dto.request.CvRequest;
 import com.example.Backend.dto.request.CvUploadRequest;
+import com.example.Backend.dto.request.UnlockRequest;
 import com.example.Backend.dto.request.admin.AdminApprovedCv;
+import com.example.Backend.dto.request.admin.ApproveUnlockRequest;
 import com.example.Backend.dto.response.CvPreviewResponse;
 import com.example.Backend.dto.response.CvResponse;
+import com.example.Backend.dto.response.UnlockRequestResponse;
 import com.example.Backend.entity.Status;
 import com.example.Backend.service.CvService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -92,7 +95,6 @@ public class CvController {
         return ResponseEntity.ok(ApiResponse.success("Xóa CV thành công"));
     }
     /// /api/cvs/{id}/preview	Lấy nội dung CV đã render (HTML hoặc JSON) để hiển thị preview.
-
     @GetMapping("/{id}/preview")
     @PreAuthorize("isAuthenticated()") // Cho phép mọi user đã đăng nhập gọi, Service sẽ check quyền chi tiết
     @Operation(summary = "Lấy nội dung CV để hiển thị preview (HTML/JSON hoặc PDF)")
@@ -146,4 +148,70 @@ public class CvController {
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách CV công khai thành công", response));
     }
 
+
+
+    // API UPDATE TRỰC TIẾP DỮ LIỆU CV FORM (Chỉ dành cho PENDING, REJECTED)
+    @Operation(summary = "Update CV bằng Form (Dành cho trạng thái PENDING hoặc REJECTED)")
+    @PreAuthorize("hasRole('STUDENT')")
+    @PutMapping(value = "/form/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<CvResponse>> updateCvForm(
+            @PathVariable Long id,
+            @RequestPart("data") String dataJson,
+            @RequestPart(value = "avatar", required = false) MultipartFile avatarFile) {
+        try {
+            CvRequest request = objectMapper.readValue(dataJson, CvRequest.class);
+            CvResponse response = cvService.updateCvFromForm(id, request, avatarFile);
+            return ResponseEntity.ok(ApiResponse.success("Cập nhật CV thành công. Trạng thái hiện tại: Đang chờ duyệt", response));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Dữ liệu JSON gửi lên không hợp lệ");
+        }
+    }
+
+    // API GỬI TICKET XIN SỬA CV (Dành cho APPROVED)
+    @Operation(summary = "Gửi yêu cầu mở khóa sửa CV (Dành cho trạng thái APPROVED)")
+    @PreAuthorize("hasRole('STUDENT')")
+    @PostMapping(value = "/{id}/unlock-requests")
+    public ResponseEntity<ApiResponse<Void>> requestUnlockCv(
+            @PathVariable Long id,
+            @RequestBody UnlockRequest unlockRequest) {
+
+        if (unlockRequest.getReason() == null || unlockRequest.getReason().trim().isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng nhập lý do muốn chỉnh sửa CV!");
+        }
+
+        cvService.createCvUpdateRequest(id, unlockRequest.getReason());
+        return ResponseEntity.ok(ApiResponse.success("Gửi yêu cầu mở khóa CV thành công. Vui lòng chờ Admin phê duyệt."));
+    }
+    @Operation(summary = "Admin duyệt hoặc từ chối yêu cầu mở khóa sửa CV")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/unlock-requests/{requestId}/approve")
+    public ResponseEntity<ApiResponse<Void>> approveUnlockRequest(
+            @PathVariable Long requestId,
+            @RequestBody ApproveUnlockRequest request) {
+
+        // Validate: Nếu từ chối thì bắt buộc phải có lý do
+        if (!request.isApproved() && (request.getAdminNote() == null || request.getAdminNote().trim().isEmpty())) {
+            throw new IllegalArgumentException("Vui lòng nhập lý do từ chối yêu cầu (adminNote)!");
+        }
+
+        // Gọi hàm Service đã viết ở bài trước
+        cvService.approveUnlockRequest(requestId, request.isApproved(), request.getAdminNote());
+
+        String message = request.isApproved()
+                ? "Đã chấp nhận yêu cầu. CV đã được chuyển về trạng thái Đang chờ duyệt (PENDING) để sinh viên cập nhật."
+                : "Đã từ chối yêu cầu mở khóa CV của sinh viên.";
+
+        return ResponseEntity.ok(ApiResponse.success(message));
+    }
+
+    @Operation(summary = "Admin lấy danh sách yêu cầu mở khóa CV")
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/unlock-requests/pending")
+    public ResponseEntity<ApiResponse<Page<UnlockRequestResponse>>> getPendingUnlockRequests(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Page<UnlockRequestResponse> response = cvService.getPendingUnlockRequests(page, size);
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách thành công", response));
+    }
 }

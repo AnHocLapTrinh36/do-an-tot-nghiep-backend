@@ -7,6 +7,7 @@ import com.example.Backend.dto.request.CvUploadRequest;
 import com.example.Backend.dto.response.CvFileResponse;
 import com.example.Backend.dto.response.CvPreviewResponse;
 import com.example.Backend.dto.response.CvResponse;
+import com.example.Backend.dto.response.UnlockRequestResponse;
 import com.example.Backend.entity.*;
 import com.example.Backend.exception.ResourceNotFoundException;
 import com.example.Backend.repository.*;
@@ -45,6 +46,7 @@ public class CvServiceImpl implements CvService {
     private final CvFileRepository cvFileRepository;
     private final AdminRepository adminRepository;
     private final UserRepository userRepository;
+    private final CvUpdateRequestRepository cvUpdateRequestRepository;
 
     @Override
     @Transactional
@@ -153,29 +155,41 @@ public class CvServiceImpl implements CvService {
     @Override
     @Transactional
     public CvResponse updateCvFromForm(Long cvId, CvRequest request, MultipartFile avatarFile) {
-        // FIXME: Chỗ này đang mock, cần lấy từ SecurityContext thật
-        Long currentStudentId = 11L;
+        // Lấy thông tin sinh viên từ token
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Student student = studentRepository.findByUser_Email(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ sinh viên"));
 
-        Cv cv = cvRepository.findByIdAndStudentId(cvId, currentStudentId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy CV hoặc bạn không có quyền chỉnh sửa"));
+        // Tìm CV thuộc về sinh viên này
+        Cv cv = cvRepository.findByIdAndStudentId(cvId, student.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy CV hoặc bạn không có quyền chỉnh sửa"));
 
+        // XỬ LÝ LOGIC CHẶN NẾU CV ĐÃ APPROVED
+        if (cv.getStatus() == Status.APPROVED) {
+            throw new RuntimeException("CV này đã được duyệt. Vui lòng gửi yêu cầu mở khóa (Ticket) thay vì lưu trực tiếp!");
+        }
+
+        // Xử lý update JSON cho PENDING và REJECTED
         Map<String, Object> newContentMap = request.getContentJson();
 
         // Xử lý avatar
         if (avatarFile != null && !avatarFile.isEmpty()) {
             try {
-                Map<String, Object> oldContentMap = objectMapper.readValue(cv.getContentJson(), Map.class);
-                String oldAvatarUrl = (String) oldContentMap.get("avatar");
-
-                String newAvatarUrl = cloudinaryService.uploadAvatar(avatarFile, "avatars/cv", "1");
-
-                if (newAvatarUrl != null) {
+                // Thử lấy avatar cũ để xóa
+                if (cv.getContentJson() != null && !cv.getContentJson().isEmpty()) {
+                    Map<String, Object> oldContentMap = objectMapper.readValue(cv.getContentJson(), Map.class);
+                    String oldAvatarUrl = (String) oldContentMap.get("avatar");
                     if (oldAvatarUrl != null && oldAvatarUrl.contains("cloudinary.com")) {
                         String oldPublicId = cloudinaryService.extractPublicId(oldAvatarUrl);
                         if (oldPublicId != null) {
                             cloudinaryService.deleteAvatar(oldPublicId, "1");
                         }
                     }
+                }
+
+                // Up avatar mới
+                String newAvatarUrl = cloudinaryService.uploadAvatar(avatarFile, "avatars/cv", "1");
+                if (newAvatarUrl != null) {
                     newContentMap.put("avatar", newAvatarUrl);
                 }
             } catch (Exception e) {
@@ -186,10 +200,11 @@ public class CvServiceImpl implements CvService {
 
         cv.setTitle(request.getTitle());
 
-        // Khi update xong, tự động đẩy về PENDING và gỡ Public
+        //Reset lại thông tin khi update (dù trước đó là PENDING hay REJECTED)
         cv.setStatus(Status.PENDING);
         cv.setIsPublic(false);
         cv.setApprovedBy(null);
+        cv.setAdminNote(null); // Xóa lý do từ chối cũ (nếu có)
 
         try {
             cv.setContentJson(objectMapper.writeValueAsString(newContentMap));
@@ -199,6 +214,90 @@ public class CvServiceImpl implements CvService {
 
         Cv updatedCv = cvRepository.save(cv);
         return toResponse(updatedCv);
+    }
+
+
+    @Override
+    @Transactional
+    public void createCvUpdateRequest(Long cvId, String reason) {
+        // Xác thực sinh viên
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Student student = studentRepository.findByUser_Email(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ sinh viên"));
+
+        // Tìm CV
+        Cv cv = cvRepository.findByIdAndStudentId(cvId, student.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy CV hoặc bạn không có quyền"));
+
+        // Kiểm tra CV có đang ở trạng thái APPROVED không
+        if (cv.getStatus() != Status.APPROVED) {
+            throw new RuntimeException("CV của bạn đang ở trạng thái " + cv.getStatus() + ". Bạn có thể sửa trực tiếp mà không cần gửi yêu cầu!");
+        }
+
+        // Kiểm tra xem có ticket nào đang Pending không (tránh spam)
+        boolean hasPendingRequest = cvUpdateRequestRepository.existsByCvIdAndStatus(cvId, Status.PENDING);
+        if (hasPendingRequest) {
+            throw new RuntimeException("Bạn đã gửi một yêu cầu mở khóa cho CV này và đang chờ Admin duyệt.");
+        }
+
+        //Lưu Ticket
+        CvUpdateRequest updateRequest = CvUpdateRequest.builder()
+                .cv(cv)
+                .student(student)
+                .reason(reason)
+                .status(Status.PENDING)
+                .build();
+
+        cvUpdateRequestRepository.save(updateRequest);
+    }
+
+    /// admin duyệt ticket
+    @Transactional
+    public void approveUnlockRequest(Long requestId, boolean isApproved, String adminNote) {
+        // Lấy ticket ra
+        CvUpdateRequest request = cvUpdateRequestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy yêu cầu mở khóa"));
+
+        //Nếu Admin duyệt (Cho phép sửa)
+        if (isApproved) {
+            request.setStatus(Status.APPROVED); // Cập nhật ticket
+
+            // QUAN TRỌNG NHẤT: Đổi trạng thái CV gốc về PENDING để sinh viên có thể sửa
+            Cv cv = request.getCv();
+            cv.setStatus(Status.PENDING);
+            cv.setIsPublic(false); // Gỡ khỏi trang public
+            cv.setApprovedBy(null);
+            cvRepository.save(cv);
+        }
+        // Nếu Admin từ chối yêu cầu mở khóa
+        else {
+            request.setStatus(Status.REJECTED);
+            request.setAdminNote(adminNote);
+            // CV gốc giữ nguyên là APPROVED, không thay đổi gì cả
+        }
+
+        cvUpdateRequestRepository.save(request);
+    }
+
+    ///danh sách cv edit cần phê duyệt
+    @Override
+    public Page<UnlockRequestResponse> getPendingUnlockRequests(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("requestedAt").descending());
+
+        // Chỉ lấy những yêu cầu đang chờ duyệt (PENDING)
+        Page<CvUpdateRequest> requests = cvUpdateRequestRepository.findByStatus(Status.PENDING, pageable);
+
+        return requests.map(req -> UnlockRequestResponse.builder()
+                .id(req.getId())
+                .cvId(req.getCv().getId())
+                .cvTitle(req.getCv().getTitle())
+                .studentId(req.getStudent().getId())
+                .studentName(req.getStudent().getUser().getFullName())
+                .mssv(req.getStudent().getMssv())
+                .reason(req.getReason())
+                .status(req.getStatus().name())
+                .requestedAt(req.getRequestedAt())
+                .build());
     }
 
     @Override
@@ -366,6 +465,9 @@ public class CvServiceImpl implements CvService {
                 .map(this::toResponse);
     }
 
+
+
+
     /**
      * Hàm chuyển đổi chung Cv → CvResponse
      */
@@ -390,6 +492,8 @@ public class CvServiceImpl implements CvService {
             }
         }
 
+        boolean hasPending = cvUpdateRequestRepository.existsByCvIdAndStatus(cv.getId(), Status.PENDING);
+
         return CvResponse.builder()
                 .id(cv.getId())
                 .studentId(cv.getStudent() != null ? cv.getStudent().getId() : null)
@@ -405,6 +509,7 @@ public class CvServiceImpl implements CvService {
                 .cvFile(cvFileResponse)
                 .downloadCount(cv.getDownloadCount())
                 .viewCount(cv.getViewCount())
+                .hasPendingRequest(hasPending)
                 .build();
     }
 }

@@ -35,4 +35,6 @@ public class CvResponse {
     private Integer downloadCount = 0;
     @JsonProperty("admin_note")
     private String adminNote;
+    @JsonProperty("has_pending_request")
+    private Boolean hasPendingRequest;
 }
