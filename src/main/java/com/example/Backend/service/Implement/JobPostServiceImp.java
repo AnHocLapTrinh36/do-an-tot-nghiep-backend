@@ -145,4 +145,25 @@ public class JobPostServiceImp implements JobPostService {
             }
         }
     }
+
+    @Override
+    @Transactional
+    public List<JobResponse> searchByTitle(String title) {
+        List<JobPost> jobs = jobPostRepository.findByTitleContainingIgnoreCase(title);
+        return jobMapper.toResponseList(jobs);
+    }
+
+    @Override
+    @Transactional
+    public List<JobResponse> filterJobs(
+            String location,
+            String type,
+            Double minSalary,
+            Double maxSalary
+    ) {
+        List<JobPost> jobs = jobPostRepository.filterJobs(
+                location, type, minSalary, maxSalary
+        );
+        return jobMapper.toResponseList(jobs);
+    }
 }

@@ -1,6 +1,7 @@
 package com.example.Backend.service;
 
 import com.example.Backend.dto.request.JobRequest;
+import com.example.Backend.dto.response.JobApplicationResponse;
 import com.example.Backend.dto.response.JobResponse;
 
 import java.util.List;
@@ -20,4 +21,8 @@ public interface JobPostService {
     JobResponse approveJob(Long id, String action, String adminEmail);
 
     JobResponse getJobDetail(Long id);
+
+    List<JobResponse> searchByTitle(String title);
+
+    List<JobResponse> filterJobs(String location, String type, Double minSalary, Double maxSalary);
 }
