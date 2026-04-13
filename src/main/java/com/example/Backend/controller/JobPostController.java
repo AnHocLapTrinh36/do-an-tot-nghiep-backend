@@ -32,4 +32,26 @@ public class JobPostController {
     public ApiResponse<List<JobResponse>> getActiveJobs() {
         return ApiResponse.success("Lấy danh sách thành công", jobPostService.getActiveJobs());
     }
+
+    @GetMapping("/search")
+    @Operation(summary = "Lấy danh sách tin đang tuyển đã duyệt, còn hạn theo tiêu đề - public")
+    public ApiResponse<List<JobResponse>> searchByTitle(
+            @RequestParam("title") String title) {
+
+        List<JobResponse> result = jobPostService.searchByTitle(title);
+        return ApiResponse.success("Tìm kiếm công việc thành công", result);
+    }
+
+    // 2. Lọc công việc theo nhiều tiêu chí
+    @GetMapping("/filter")
+    @Operation(summary = "Lọc danh sách tin đang tuyển đã duyệt, còn hạn - public")
+    public ApiResponse<List<JobResponse>> filterJobs(
+            @RequestParam(value = "location", required = false) String location,
+            @RequestParam(value = "type", required = false) String type,
+            @RequestParam(value = "minSalary", required = false) Double minSalary,
+            @RequestParam(value = "maxSalary", required = false) Double maxSalary) {
+
+        List<JobResponse> result = jobPostService.filterJobs(location, type, minSalary, maxSalary);
+        return ApiResponse.success("Lọc danh sách công việc thành công", result);
+    }
 }
