@@ -16,6 +16,7 @@ import com.example.Backend.service.JobPostService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -30,6 +31,17 @@ public class JobPostServiceImp implements JobPostService {
     private final CloudinaryService cloudinaryService;
     private final JobMapper jobMapper;
     private final JobPostRepository jobPostRepository;
+    private final ObjectMapper objectMapper;
+
+    private String convertTagsToJson(List<String> tags) {
+        if (tags == null || tags.isEmpty()) return null;
+        try {
+            //chuyển mảng sang json
+            return objectMapper.writeValueAsString(tags);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException("Lỗi convert tags sang JSON: " + e.getMessage());
+        }
+    }
 
     @Override
     @Transactional
@@ -52,6 +64,7 @@ public class JobPostServiceImp implements JobPostService {
                 .workLocation(request.getWorkLocation())
                 .postedAt(LocalDateTime.now())
                 .status(JobStatus.PENDING)
+                .tags(convertTagsToJson(request.getTags()))
                 .build();
         handleJdFileUpload(request, job);
         return jobMapper.toResponse(jobPostRepository.save(job));
@@ -78,6 +91,7 @@ public class JobPostServiceImp implements JobPostService {
         job.setEndDay(request.getEndDay());
         job.setJobType(request.getJobType());
         job.setWorkLocation(request.getWorkLocation());
+        job.setTags(convertTagsToJson(request.getTags()));
         handleJdFileUpload(request, job);
         return jobMapper.toResponse(jobPostRepository.save(job));
     }
@@ -159,11 +173,37 @@ public class JobPostServiceImp implements JobPostService {
             String location,
             String type,
             Double minSalary,
-            Double maxSalary
+            Double maxSalary,
+            List<String> tags
     ) {
         List<JobPost> jobs = jobPostRepository.filterJobs(
                 location, type, minSalary, maxSalary
         );
+        if (tags == null || tags.isEmpty()) {
+            return jobMapper.toResponseList(jobs);
+        }
+        List<JobPost> filteredJobs = jobs.stream()
+                .filter(job -> {
+                    String jobTagsJson = job.getTags();
+                    if (jobTagsJson == null) return false;
+                    //anyMatch chỉ cần tìm 1 phần tử thỏa mãn điều kiện thì dừng lại ngay
+                    String lowerTagsJson = jobTagsJson.toLowerCase();
+
+                    return tags.stream().anyMatch(tag -> {
+                        String lowerTag = tag.toLowerCase();
+                        // Mẹo: Tìm "abc" (có ngoặc) trong chuỗi ["abc","def"]
+                        return lowerTagsJson.contains("\"" + lowerTag + "\"");
+                    });
+                })
+                .toList();
+
+        return jobMapper.toResponseList(filteredJobs);
+    }
+
+    @Override
+    @Transactional
+    public List<JobResponse> getJobsByCompanyEmail(String email) {
+        List<JobPost> jobs = jobPostRepository.findByCompanyUserEmail(email);
         return jobMapper.toResponseList(jobs);
     }
 }

@@ -49,9 +49,10 @@ public class JobPostController {
             @RequestParam(value = "location", required = false) String location,
             @RequestParam(value = "type", required = false) String type,
             @RequestParam(value = "minSalary", required = false) Double minSalary,
-            @RequestParam(value = "maxSalary", required = false) Double maxSalary) {
+            @RequestParam(value = "maxSalary", required = false) Double maxSalary,
+            @RequestParam(value = "tags", required = false) List<String> tags) {
 
-        List<JobResponse> result = jobPostService.filterJobs(location, type, minSalary, maxSalary);
+        List<JobResponse> result = jobPostService.filterJobs(location, type, minSalary, maxSalary, tags);
         return ApiResponse.success("Lọc danh sách công việc thành công", result);
     }
 }

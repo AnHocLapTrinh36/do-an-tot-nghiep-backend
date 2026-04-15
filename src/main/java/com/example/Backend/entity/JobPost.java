@@ -48,4 +48,7 @@ public class JobPost {
     private Integer viewCount = 0;
     private Integer appliedCount = 0;
     private Double salary;
+    // lưu dạng json, lưu các ngôn ngữ, hoặc framework
+
+    private String tags;
 }

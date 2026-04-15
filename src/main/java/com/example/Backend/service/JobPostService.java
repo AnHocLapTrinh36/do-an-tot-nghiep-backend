@@ -24,5 +24,7 @@ public interface JobPostService {
 
     List<JobResponse> searchByTitle(String title);
 
-    List<JobResponse> filterJobs(String location, String type, Double minSalary, Double maxSalary);
+    List<JobResponse> filterJobs(String location, String type, Double minSalary, Double maxSalary, List<String> tags);
+
+    List<JobResponse> getJobsByCompanyEmail(String email);
 }

@@ -4,6 +4,7 @@ import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class JobRequest {
@@ -16,4 +17,5 @@ public class JobRequest {
     private LocalDateTime startDay;
     private LocalDateTime endDay;
     private MultipartFile jdFile;
+    private List<String> tags;
 }

@@ -106,13 +106,13 @@ public class CompanyController {
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách ứng viên thành công", applicants));
     }
 
-    @GetMapping("/jobs/{id}/test")
-    @PreAuthorize("hasRole('COMPANY')")
-    @Operation(summary = "lấy danh sách các đơn ưngs tuyển của 1 bài viết - role(company)")
-    public ResponseEntity<ApiResponse<List<JobApplication>>> test(@PathVariable Long id) {
-        List<JobApplication> applicants = jobApplicationService.test(id);
-        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách ứng viên thành công", applicants));
-    }
+//    @GetMapping("/jobs/{id}/test")
+//    @PreAuthorize("hasRole('COMPANY')")
+//    @Operation(summary = "lấy danh sách các đơn ưngs tuyển của 1 bài viết - role(company)")
+//    public ResponseEntity<ApiResponse<List<JobApplication>>> test(@PathVariable Long id) {
+//        List<JobApplication> applicants = jobApplicationService.test(id);
+//        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách ứng viên thành công", applicants));
+//    }
 
     @PatchMapping("/applications/{application_id}/status")
     @PreAuthorize("hasRole('COMPANY')")
@@ -126,5 +126,15 @@ public class CompanyController {
 
         // Trả về bọc trong ApiResponse như các API khác của bạn
         return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái ứng viên thành công", response));
+    }
+
+    @GetMapping("me/jobs")
+    @PreAuthorize("hasRole('COMPANY')")
+    @Operation(summary = "Lấy danh sách bài viết của công ty - role(company)")
+    public ApiResponse<List<JobResponse>> getMyJobs(Authentication auth) {
+        return ApiResponse.success(
+                "Lấy danh sách đăng tin thành công",
+                jobPostService.getJobsByCompanyEmail(auth.getName())
+        );
     }
 }
