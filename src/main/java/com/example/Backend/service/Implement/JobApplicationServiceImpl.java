@@ -62,7 +62,8 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                 .status(ApplicationStatus.PENDING)
                 .build();
         JobApplication savedApp = applicationRepository.save(application);
-        job.setAppliedCount(job.getAppliedCount() + 1);
+        int currentCount = job.getViewCount() == null ? 0 : job.getViewCount();
+        job.setAppliedCount(currentCount + 1);
         jobPostRepository.save(job);
 
         return applicationMapper.toResponse(savedApp);
@@ -80,8 +81,8 @@ public class JobApplicationServiceImpl implements JobApplicationService {
             throw new RuntimeException("Bạn không có quyền truy cập danh sách ứng viên của công việc này!");
         }
 
-        List<JobApplication> applications = applicationRepository.findByJobPostId(jobId);
-
+//        List<JobApplication> applications = applicationRepository.findByJobPostId(jobId);
+        List<JobApplication> applications = applicationRepository.findByJobPostIdAndStatus(jobId, ApplicationStatus.PENDING);
         return applicationMapper.toApplicantResponseList(applications);
     }
 

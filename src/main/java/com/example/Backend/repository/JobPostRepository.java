@@ -27,6 +27,8 @@ public interface JobPostRepository extends JpaRepository<JobPost, Long> {
             """)
     List<JobPost> findByTitleContainingIgnoreCase(String title);
 
+    List<JobPost> findByCompanyUserEmailAndStatusNot(String email, JobStatus status);
+
     @Query("""
                 SELECT j FROM JobPost j
                 WHERE j.status = 'APPROVED'

@@ -56,6 +56,7 @@ public class SecurityConfig {
                                 "/api/cvs/public/**",
                                 "/api/companies",
                                 "/api/jobs/active",
+                                "/api/jobs/search",
                                 "/api/jobs/{id}",
                                 "/api/companies/{id}",
                                 "/api/auth/register",

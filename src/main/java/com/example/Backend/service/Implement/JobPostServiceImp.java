@@ -10,17 +10,21 @@ import com.example.Backend.entity.User;
 import com.example.Backend.exception.ResourceNotFoundException;
 import com.example.Backend.mapper.JobMapper;
 import com.example.Backend.repository.CompanyRepository;
+import com.example.Backend.repository.JobFavoriteRepository;
 import com.example.Backend.repository.JobPostRepository;
 import com.example.Backend.repository.UserRepository;
 import com.example.Backend.service.JobPostService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +36,7 @@ public class JobPostServiceImp implements JobPostService {
     private final JobMapper jobMapper;
     private final JobPostRepository jobPostRepository;
     private final ObjectMapper objectMapper;
+    private final JobFavoriteRepository favoriteRepository;
 
     private String convertTagsToJson(List<String> tags) {
         if (tags == null || tags.isEmpty()) return null;
@@ -144,7 +149,25 @@ public class JobPostServiceImp implements JobPostService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tin tuyển dụng"));
         Integer currentView = job.getViewCount() != null ? job.getViewCount() : 0;
         job.setViewCount(currentView + 1);
-        return jobMapper.toResponse(jobPostRepository.save(job));
+        JobPost savedJob = jobPostRepository.save(job);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isFav = false;
+
+        // Kiểm tra xem user đã thực sự đăng nhập chưa (không phải ẩn danh)
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
+            String email = auth.getName();
+            Optional<User> userOpt = userRepository.findByEmail(email);
+
+            if (userOpt.isPresent()) {
+                isFav = favoriteRepository.findByUserIdAndJobPostId(userOpt.get().getId(), id).isPresent();
+            }
+        }
+
+        // 4. Map sang Response và gán giá trị isFavorite
+        JobResponse response = jobMapper.toResponse(savedJob);
+        response.setFavorite(isFav);
+
+        return response;
     }
 
     private void handleJdFileUpload(JobRequest request, JobPost job) {
@@ -203,7 +226,9 @@ public class JobPostServiceImp implements JobPostService {
     @Override
     @Transactional
     public List<JobResponse> getJobsByCompanyEmail(String email) {
-        List<JobPost> jobs = jobPostRepository.findByCompanyUserEmail(email);
+        List<JobPost> jobs = jobPostRepository.findByCompanyUserEmailAndStatusNot(email, JobStatus.CLOSE);
+//        List<JobPost> jobs = jobPostRepository.findByCompanyUserEmail(email);
+
         return jobMapper.toResponseList(jobs);
     }
 }

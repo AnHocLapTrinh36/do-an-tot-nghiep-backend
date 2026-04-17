@@ -26,5 +26,7 @@ public class JobResponse {
     private LocalDateTime startDay;
     private LocalDateTime endDay;
     private List<String> tags;
-
+    private String description;
+    private String requirements;
+    private boolean isFavorite;
 }
