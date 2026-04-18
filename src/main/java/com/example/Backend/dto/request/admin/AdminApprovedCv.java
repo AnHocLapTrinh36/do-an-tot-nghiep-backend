@@ -7,9 +7,7 @@ import lombok.Data;
 
 @Data
 public class AdminApprovedCv {
-
     private Status status;
-
     @JsonProperty("admin_note")
     private String adminNote;
 
