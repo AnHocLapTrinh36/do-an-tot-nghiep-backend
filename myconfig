@@ -1,6 +1,8 @@
 spring.application.name=Backend
 # ==================== SQL Server Connection  ====================
-
+spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=database_portal;encrypt=true;trustServerCertificate=true
+spring.datasource.username=sa
+spring.datasource.password=123456
 
 
 
