@@ -3,14 +3,12 @@ package com.example.Backend.service.Implement;
 import com.example.Backend.dto.request.ApplicationReviewRequest;
 import com.example.Backend.dto.request.JobApplyRequest;
 import com.example.Backend.dto.response.ApplicantResponse;
+import com.example.Backend.dto.response.CompanyResponse;
 import com.example.Backend.dto.response.JobApplicationResponse;
 import com.example.Backend.entity.*;
 import com.example.Backend.exception.ResourceNotFoundException;
 import com.example.Backend.mapper.JobApplicationMapper;
-import com.example.Backend.repository.CvRepository;
-import com.example.Backend.repository.JobApplicationRepository;
-import com.example.Backend.repository.JobPostRepository;
-import com.example.Backend.repository.StudentRepository;
+import com.example.Backend.repository.*;
 import com.example.Backend.service.JobApplicationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,6 +27,7 @@ public class JobApplicationServiceImpl implements JobApplicationService {
     private final StudentRepository studentRepository;
     private final CvRepository cvRepository;
     private final JobApplicationMapper applicationMapper;
+    private final CompanyRepository companyRepository;
 
     @Override
     @Transactional
@@ -83,6 +82,15 @@ public class JobApplicationServiceImpl implements JobApplicationService {
 
 //        List<JobApplication> applications = applicationRepository.findByJobPostId(jobId);
         List<JobApplication> applications = applicationRepository.findByJobPostIdAndStatus(jobId, ApplicationStatus.PENDING);
+        return applicationMapper.toApplicantResponseList(applications);
+    }
+
+    @Override
+    @Transactional
+    public List<ApplicantResponse> getJobApplicationsApproved() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Company company = companyRepository.findByUserEmail(email).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy công ty"));
+        List<JobApplication> applications = applicationRepository.findByJobPostCompanyIdAndStatus(company.getId(), ApplicationStatus.APPROVED);
         return applicationMapper.toApplicantResponseList(applications);
     }
 

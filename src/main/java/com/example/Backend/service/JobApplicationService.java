@@ -13,6 +13,8 @@ public interface JobApplicationService {
 
     List<ApplicantResponse> getApplicantsByJob(Long jobId);
 
+    List<ApplicantResponse> getJobApplicationsApproved();
+
     JobApplicationResponse reviewApplication(Long applicationId, ApplicationReviewRequest request);
 
     List<JobApplication> test(Long jobId);

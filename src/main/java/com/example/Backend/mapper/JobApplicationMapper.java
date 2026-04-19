@@ -23,6 +23,7 @@ public interface JobApplicationMapper {
     @Mapping(source = "student.user.fullName", target = "fullName")
     @Mapping(source = "student.user.email", target = "email")
     @Mapping(source = "cv.title", target = "cvTitle")
+    @Mapping(source = "jobPost.title", target = "jobTitle")
     ApplicantResponse toApplicantResponse(JobApplication entity);
 
     List<ApplicantResponse> toApplicantResponseList(List<JobApplication> entities);

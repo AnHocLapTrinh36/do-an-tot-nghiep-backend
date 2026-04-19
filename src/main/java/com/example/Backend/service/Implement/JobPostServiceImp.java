@@ -3,16 +3,10 @@ package com.example.Backend.service.Implement;
 import com.example.Backend.cloudinary.CloudinaryService;
 import com.example.Backend.dto.request.JobRequest;
 import com.example.Backend.dto.response.JobResponse;
-import com.example.Backend.entity.Company;
-import com.example.Backend.entity.JobPost;
-import com.example.Backend.entity.JobStatus;
-import com.example.Backend.entity.User;
+import com.example.Backend.entity.*;
 import com.example.Backend.exception.ResourceNotFoundException;
 import com.example.Backend.mapper.JobMapper;
-import com.example.Backend.repository.CompanyRepository;
-import com.example.Backend.repository.JobFavoriteRepository;
-import com.example.Backend.repository.JobPostRepository;
-import com.example.Backend.repository.UserRepository;
+import com.example.Backend.repository.*;
 import com.example.Backend.service.JobPostService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +31,7 @@ public class JobPostServiceImp implements JobPostService {
     private final JobPostRepository jobPostRepository;
     private final ObjectMapper objectMapper;
     private final JobFavoriteRepository favoriteRepository;
+    private final JobApplicationRepository jobApplicationRepository;
 
     private String convertTagsToJson(List<String> tags) {
         if (tags == null || tags.isEmpty()) return null;
@@ -228,7 +223,11 @@ public class JobPostServiceImp implements JobPostService {
     public List<JobResponse> getJobsByCompanyEmail(String email) {
         List<JobPost> jobs = jobPostRepository.findByCompanyUserEmailAndStatusNot(email, JobStatus.CLOSE);
 //        List<JobPost> jobs = jobPostRepository.findByCompanyUserEmail(email);
-
-        return jobMapper.toResponseList(jobs);
+        List<JobResponse> responseList = jobMapper.toResponseList(jobs);
+        responseList.forEach(jobDto -> {
+            Integer count = jobApplicationRepository.countByJobPostIdAndStatus(jobDto.getId(), ApplicationStatus.PENDING);
+            jobDto.setQuantityApply(count);
+        });
+        return responseList;
     }
 }
