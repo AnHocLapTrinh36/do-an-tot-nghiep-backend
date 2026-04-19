@@ -16,4 +16,5 @@ public class ApplicantResponse {
     private String cvFileUrl;
     private String status;
     private LocalDateTime appliedAt;
+    private String jobTitle;
 }

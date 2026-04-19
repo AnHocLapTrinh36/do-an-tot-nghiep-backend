@@ -106,6 +106,14 @@ public class CompanyController {
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách ứng viên thành công", applicants));
     }
 
+    @GetMapping("/jobs/applications/approved")
+    @PreAuthorize("hasRole('COMPANY')")
+    @Operation(summary = "lấy danh sách các đơn ưngs tuyển đã được duyệt - role(company)")
+    public ResponseEntity<ApiResponse<List<ApplicantResponse>>> getJobApplicationsApproved() {
+        List<ApplicantResponse> applicants = jobApplicationService.getJobApplicationsApproved();
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách ứng viên thành công", applicants));
+    }
+
 //    @GetMapping("/jobs/{id}/test")
 //    @PreAuthorize("hasRole('COMPANY')")
 //    @Operation(summary = "lấy danh sách các đơn ưngs tuyển của 1 bài viết - role(company)")

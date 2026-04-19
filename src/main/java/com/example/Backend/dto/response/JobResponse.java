@@ -29,4 +29,5 @@ public class JobResponse {
     private String description;
     private String requirements;
     private boolean isFavorite;
+    private Integer quantityApply;
 }
