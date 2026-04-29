@@ -9,6 +9,8 @@ import java.time.LocalDateTime;
 @Builder
 public class ApplicantResponse {
     private Long applicationId;
+    private Long cvId;
+    private String cvType;
     private Long studentId;
     private String fullName;
     private String email;

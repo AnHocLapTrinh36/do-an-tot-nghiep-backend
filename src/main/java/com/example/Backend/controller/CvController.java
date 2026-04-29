@@ -22,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.util.List;
 
 @RestController
@@ -67,10 +68,11 @@ public class CvController {
     @GetMapping("/my-cvs")
     @PreAuthorize("hasRole('STUDENT')")
     @Operation(summary = "lấy danh danh sách cv của sinh viên hiện tại")
-    public ResponseEntity<ApiResponse<List<CvResponse>>>getMyCVs() {
+    public ResponseEntity<ApiResponse<List<CvResponse>>> getMyCVs() {
         List<CvResponse> response = cvService.getMyCvs();
-        return ResponseEntity.ok(ApiResponse.success("CV của sinh viên hiện tại",response));
+        return ResponseEntity.ok(ApiResponse.success("CV của sinh viên hiện tại", response));
     }
+
     //danh sách tất cả CV (role admin)
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -79,14 +81,16 @@ public class CvController {
         List<CvResponse> responses = cvService.getAllCvs();
         return ResponseEntity.ok(responses);
     }
+
     /// chi tiết 1 cv
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('STUDENT', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('STUDENT', 'ADMIN','COMPANY')")
     @Operation(summary = "Xem chi tiết một CV theo ID")
     public ResponseEntity<CvResponse> getCvById(@PathVariable Long id) {
         CvResponse response = cvService.getCvById(id);
         return ResponseEntity.ok(response);
     }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('STUDENT', 'ADMIN')")
     @Operation(summary = "Xóa CV (chỉ chủ sở hữu hoặc admin)")
@@ -94,6 +98,7 @@ public class CvController {
         cvService.deleteCv(id);
         return ResponseEntity.ok(ApiResponse.success("Xóa CV thành công"));
     }
+
     /// /api/cvs/{id}/preview	Lấy nội dung CV đã render (HTML hoặc JSON) để hiển thị preview.
     @GetMapping("/{id}/preview")
     @PreAuthorize("isAuthenticated()") // Cho phép mọi user đã đăng nhập gọi, Service sẽ check quyền chi tiết
@@ -103,7 +108,7 @@ public class CvController {
         return ResponseEntity.ok(ApiResponse.success("Lấy dữ liệu preview thành công", response));
     }
 
-    ///admin duyệt Cv của sinh viên (role admin)
+    /// admin duyệt Cv của sinh viên (role admin)
     @PutMapping("/{id}/approve")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Duyệt hoặc từ chối CV (Chỉ Admin)")
@@ -149,7 +154,6 @@ public class CvController {
     }
 
 
-
     // API UPDATE TRỰC TIẾP DỮ LIỆU CV FORM (Chỉ dành cho PENDING, REJECTED)
     @Operation(summary = "Update CV bằng Form (Dành cho trạng thái PENDING hoặc REJECTED)")
     @PreAuthorize("hasRole('STUDENT')")
@@ -182,6 +186,7 @@ public class CvController {
         cvService.createCvUpdateRequest(id, unlockRequest.getReason());
         return ResponseEntity.ok(ApiResponse.success("Gửi yêu cầu mở khóa CV thành công. Vui lòng chờ Admin phê duyệt."));
     }
+
     @Operation(summary = "Admin duyệt hoặc từ chối yêu cầu mở khóa sửa CV")
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/unlock-requests/{requestId}/approve")

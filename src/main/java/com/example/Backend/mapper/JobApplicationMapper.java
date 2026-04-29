@@ -18,6 +18,8 @@ public interface JobApplicationMapper {
     JobApplicationResponse toResponse(JobApplication entity);
 
     //cho company
+    @Mapping(source = "cv.id", target = "cvId")
+    @Mapping(source = "cv.type", target = "cvType")
     @Mapping(source = "id", target = "applicationId")
     @Mapping(source = "student.id", target = "studentId")
     @Mapping(source = "student.user.fullName", target = "fullName")
@@ -25,6 +27,7 @@ public interface JobApplicationMapper {
     @Mapping(source = "cv.title", target = "cvTitle")
     @Mapping(source = "jobPost.title", target = "jobTitle")
     ApplicantResponse toApplicantResponse(JobApplication entity);
+
 
     List<ApplicantResponse> toApplicantResponseList(List<JobApplication> entities);
 

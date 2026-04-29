@@ -46,6 +46,8 @@ public class CvServiceImpl implements CvService {
     private final CvFileRepository cvFileRepository;
     private final AdminRepository adminRepository;
     private final UserRepository userRepository;
+    private final CompanyRepository companyRepository;
+    private final JobApplicationRepository jobApplicationRepository;
     private final CvUpdateRequestRepository cvUpdateRequestRepository;
 
     @Override
@@ -142,7 +144,7 @@ public class CvServiceImpl implements CvService {
         cvFile.setCv(savedCv);
         cvFile.setFileName(file.getOriginalFilename());
         cvFile.setFilePath(fileUrl);
-        cvFile.setFileSize((int)file.getSize());
+        cvFile.setFileSize((int) file.getSize());
         cvFile.setUploadedAt(LocalDateTime.now());
         cvFileRepository.save(cvFile);
 
@@ -279,7 +281,7 @@ public class CvServiceImpl implements CvService {
         cvUpdateRequestRepository.save(request);
     }
 
-    ///danh sách cv edit cần phê duyệt
+    /// danh sách cv edit cần phê duyệt
     @Override
     public Page<UnlockRequestResponse> getPendingUnlockRequests(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("requestedAt").descending());
@@ -334,7 +336,21 @@ public class CvServiceImpl implements CvService {
                 .anyMatch(role -> role.getAuthority().equals("ROLE_ADMIN"));
 
         // Nếu là ADMIN -> Cho phép xem ngay lập tức
-        if (isAdmin) {
+        if (isAdmin) return toResponse(cv);
+
+        // 2. Nếu là COMPANY -> Kiểm tra xem sinh viên có nộp CV này cho mình không
+        boolean isCompany = authentication.getAuthorities().stream()
+                .anyMatch(role -> role.getAuthority().equals("ROLE_COMPANY"));
+
+        if (isCompany) {
+            // Tìm công ty hiện tại dựa trên email đăng nhập
+            Company currentCompany = companyRepository.findByUserEmail(email)
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ công ty"));
+            boolean hasApplied = jobApplicationRepository.existsByCv_IdAndJobPost_Company_Id(id, currentCompany.getId());
+
+            if (!hasApplied) {
+                throw new RuntimeException("Bạn không có quyền xem CV này vì ứng viên chưa nộp cho công ty bạn.");
+            }
             return toResponse(cv);
         }
         Student currentStudent = studentRepository.findByUser_Email(email)
@@ -420,8 +436,7 @@ public class CvServiceImpl implements CvService {
                         throw new RuntimeException("Bạn không có quyền xem CV này");
                     }
                 }
-            }
-            else if (user.getRole() == RoleType.COMPANY) {
+            } else if (user.getRole() == RoleType.COMPANY) {
                 if (!cv.getIsPublic() || cv.getStatus() != Status.APPROVED) {
                     throw new RuntimeException("CV này chưa được công khai");
                 }
@@ -464,8 +479,6 @@ public class CvServiceImpl implements CvService {
         return cvRepository.findAll(spec, pageable)
                 .map(this::toResponse);
     }
-
-
 
 
     /**
