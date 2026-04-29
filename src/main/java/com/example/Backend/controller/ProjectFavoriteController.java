@@ -51,4 +51,14 @@ public class ProjectFavoriteController {
         projectFavoriteService.unlikeProject(projectId, authentication.getName());
         return ApiResponse.success("Bo project khoi danh sach yeu thich thanh cong");
     }
+
+    @GetMapping("/{projectId}/isFavorited")
+    @PreAuthorize("hasAnyRole('STUDENT', 'COMPANY')")
+    @Operation(summary = "Kiểm tra project đã được yêu thích chưa - role(student, company)")
+    public ApiResponse<Boolean> isFavorited(
+            @PathVariable Long projectId,
+            Authentication authentication) {
+        boolean status = projectFavoriteService.isProjectFavorited(projectId, authentication.getName());
+        return ApiResponse.success("Lay trang thai yeu thich thanh cong", status);
+    }
 }

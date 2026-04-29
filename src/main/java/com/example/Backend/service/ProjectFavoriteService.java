@@ -12,4 +12,6 @@ public interface ProjectFavoriteService {
     List<ProjectFavoriteResponse> getMyFavorites(String email);
 
     void unlikeProject(Long projectId, String email);
+
+    boolean isProjectFavorited(Long projectId, String email);
 }
