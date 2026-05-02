@@ -10,9 +10,8 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-
 @Repository
-public interface ProjectRepository  extends JpaRepository<Project,Long> {
+public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     @Query("SELECT p FROM Project p " +
             "WHERE p.status = 'APPROVED' " +
@@ -23,9 +22,21 @@ public interface ProjectRepository  extends JpaRepository<Project,Long> {
             @Param("technologyId") Long technologyId,
             Pageable pageable
     );
-    /// phương thức để tìm kiếm đồ án dựa trên Email của người dùng
-    /// Lấy toàn bộ danh sách, sắp xếp theo thời gian tạo giảm dần
+
     List<Project> findByStudent_User_EmailOrderByCreatedAtDesc(String email);
+
+    @Query("""
+            SELECT p
+            FROM Project p
+            WHERE p.course IS NOT NULL
+              AND EXISTS (
+                  SELECT 1
+                  FROM p.course.teachers t
+                  WHERE t.id = :teacherId
+              )
+            ORDER BY p.createdAt DESC
+            """)
+    List<Project> findProjectsForTeacherEvaluation(@Param("teacherId") Long teacherId);
 
     @Query("SELECT p FROM Project p " +
             "ORDER BY CASE WHEN p.status = 'PENDING' THEN 0 " +
@@ -33,5 +44,4 @@ public interface ProjectRepository  extends JpaRepository<Project,Long> {
             "              WHEN p.status = 'REJECTED' THEN 2 " +
             "              ELSE 3 END ASC, p.createdAt DESC")
     Page<Project> findAllProjectsForAdmin(Pageable pageable);
-
 }

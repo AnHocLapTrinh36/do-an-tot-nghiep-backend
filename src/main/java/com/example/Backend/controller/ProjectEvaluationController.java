@@ -4,6 +4,7 @@ import com.example.Backend.dto.apiResponse.ApiResponse;
 import com.example.Backend.dto.request.ProjectEvaluationRequest;
 import com.example.Backend.dto.request.ProjectEvaluationUpdateRequest;
 import com.example.Backend.dto.response.ProjectEvaluationResponse;
+import com.example.Backend.dto.response.TeacherProjectEvaluationItemResponse;
 import com.example.Backend.service.ProjectEvaluationService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -41,6 +42,27 @@ public class ProjectEvaluationController {
     ) {
         ProjectEvaluationResponse response = projectEvaluationService.updateEvaluation(evaluationId, request, authentication.getName());
         return ApiResponse.success("Cập nhật đánh giá đồ án thành công", response);
+    }
+
+    @GetMapping("/api/teacher/projects-for-evaluation")
+    @PreAuthorize("hasRole('TEACHER')")
+    @Operation(summary = "Giảng viên xem danh sách đồ án thuộc môn học mình phụ trách để đánh giá")
+    public ApiResponse<List<TeacherProjectEvaluationItemResponse>> getProjectsForEvaluation(Authentication authentication) {
+        List<TeacherProjectEvaluationItemResponse> responses =
+                projectEvaluationService.getProjectsForEvaluation(authentication.getName());
+        return ApiResponse.success("Lấy danh sách đồ án để đánh giá thành công", responses);
+    }
+
+    @GetMapping("/api/teacher/projects/{projectId}/my-evaluation")
+    @PreAuthorize("hasRole('TEACHER')")
+    @Operation(summary = "Giảng viên xem chi tiết đánh giá của mình theo project để sửa")
+    public ApiResponse<ProjectEvaluationResponse> getMyEvaluationByProject(
+            @PathVariable Long projectId,
+            Authentication authentication
+    ) {
+        ProjectEvaluationResponse response =
+                projectEvaluationService.getMyEvaluationByProject(projectId, authentication.getName());
+        return ApiResponse.success("Lấy chi tiết đánh giá thành công", response);
     }
 
     @GetMapping("/api/students/me/project-evaluations")

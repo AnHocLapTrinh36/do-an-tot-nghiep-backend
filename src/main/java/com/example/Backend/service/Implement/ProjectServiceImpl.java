@@ -251,30 +251,51 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đồ án"));
 
-        // Logic bảo mật: Nếu chưa được duyệt, chỉ chủ nhân hoặc Admin mới được xem
-        if (project.getStatus() != ProjectStatus.APPROVED) {
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-            // Nếu là khách chưa đăng nhập hoặc không phải Admin/Chủ sở hữu
-            if (auth == null || auth instanceof AnonymousAuthenticationToken) {
+        if (auth == null || auth instanceof AnonymousAuthenticationToken) {
+            if (project.getStatus() != ProjectStatus.APPROVED) {
                 throw new RuntimeException("403 Forbidden: Đồ án này chưa được công khai");
             }
 
-            String currentEmail = auth.getName();
-            boolean isAdmin = auth.getAuthorities().stream()
-                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-            String ownerEmail = project.getStudent().getUser().getEmail();
+            project.setViewCount(project.getViewCount() + 1);
+            projectRepository.save(project);
+            return projectMapper.toResponse(project);
+        }
 
-            if (!isAdmin && !ownerEmail.equals(currentEmail)) {
+        String currentEmail = auth.getName();
+
+        boolean isAdmin = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        boolean isTeacher = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_TEACHER"));
+
+        String ownerEmail = project.getStudent().getUser().getEmail();
+
+        boolean isOwner = ownerEmail.equals(currentEmail);
+
+        boolean isTeacherOfCourse = false;
+        if (isTeacher && project.getCourse() != null && project.getCourse().getTeachers() != null) {
+            isTeacherOfCourse = project.getCourse().getTeachers().stream()
+                    .anyMatch(teacher ->
+                            teacher.getUser() != null &&
+                                    teacher.getUser().getEmail() != null &&
+                                    teacher.getUser().getEmail().equals(currentEmail)
+                    );
+        }
+
+        if (project.getStatus() != ProjectStatus.APPROVED) {
+            if (!isAdmin && !isOwner && !isTeacherOfCourse) {
                 throw new RuntimeException("403 Forbidden: Bạn không có quyền xem đồ án này");
             }
         }
 
-        // Tăng lượt xem
         project.setViewCount(project.getViewCount() + 1);
         projectRepository.save(project);
 
         return projectMapper.toResponse(project);
     }
+
 
 }
