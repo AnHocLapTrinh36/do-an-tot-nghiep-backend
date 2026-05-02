@@ -12,7 +12,11 @@ public interface ProjectEvaluationRepository extends JpaRepository<ProjectEvalua
 
     boolean existsByProjectIdAndTeacherId(Long projectId, Long teacherId);
 
+    Optional<ProjectEvaluation> findByProjectIdAndTeacherId(Long projectId, Long teacherId);
+
     Optional<ProjectEvaluation> findByIdAndTeacherId(Long id, Long teacherId);
+
+    List<ProjectEvaluation> findByTeacherId(Long teacherId);
 
     List<ProjectEvaluation> findByProjectIdOrderByCreatedAtDesc(Long projectId);
 
