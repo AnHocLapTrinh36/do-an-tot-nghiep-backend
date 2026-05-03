@@ -7,6 +7,7 @@ import com.example.Backend.entity.*;
 import com.example.Backend.exception.ResourceNotFoundException;
 import com.example.Backend.mapper.JobMapper;
 import com.example.Backend.repository.*;
+import com.example.Backend.service.AuditLogService;
 import com.example.Backend.service.JobPostService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ public class JobPostServiceImp implements JobPostService {
     private final ObjectMapper objectMapper;
     private final JobFavoriteRepository favoriteRepository;
     private final JobApplicationRepository jobApplicationRepository;
+    private final AuditLogService auditLogService;
 
     private String convertTagsToJson(List<String> tags) {
         if (tags == null || tags.isEmpty()) return null;
@@ -122,8 +124,10 @@ public class JobPostServiceImp implements JobPostService {
         //kiem tra xem phai Approve khonh
         if ("APPROVE".equalsIgnoreCase(action)) {
             job.setStatus(JobStatus.APPROVED);
+            auditLogService.saveLog(admin.getId(), job.getId(), "Duyệt bài tuyển dụng");
         } else {
             job.setStatus(JobStatus.REJECTED);
+            auditLogService.saveLog(admin.getId(), job.getId(), "Từ chối bài tuyển dụng");
         }
         job.setApprovedBy(admin);
         job.setApprovedAt(LocalDateTime.now());

@@ -11,6 +11,7 @@ import com.example.Backend.dto.response.UnlockRequestResponse;
 import com.example.Backend.entity.*;
 import com.example.Backend.exception.ResourceNotFoundException;
 import com.example.Backend.repository.*;
+import com.example.Backend.service.AuditLogService;
 import com.example.Backend.service.CvService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,6 +50,7 @@ public class CvServiceImpl implements CvService {
     private final CompanyRepository companyRepository;
     private final JobApplicationRepository jobApplicationRepository;
     private final CvUpdateRequestRepository cvUpdateRequestRepository;
+    private final AuditLogService auditLogService;
 
     @Override
     @Transactional
@@ -401,11 +403,15 @@ public class CvServiceImpl implements CvService {
             cv.setApprovedBy(currentAdmin.getId());
             cv.setIsPublic(true);
             cv.setAdminNote(null);
+            auditLogService.saveLog(currentAdmin.getUser().getId(), cv.getId(), "Duyệt CV");
         } else {
             // Từ chối hoặc trả về Pending thì gỡ Public
             cv.setApprovedBy(null);
             cv.setIsPublic(false);
             cv.setAdminNote(adminNote);
+            if (status == Status.REJECTED) {
+                auditLogService.saveLog(currentAdmin.getUser().getId(), cv.getId(), "Từ chối CV");
+            }
         }
 
         Cv updatedCv = cvRepository.save(cv);
