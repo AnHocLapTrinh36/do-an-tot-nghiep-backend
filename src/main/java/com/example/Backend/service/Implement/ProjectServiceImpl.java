@@ -6,10 +6,12 @@ import com.example.Backend.dto.request.admin.AdminApprovedProject;
 import com.example.Backend.dto.response.ProjectResponse;
 import com.example.Backend.entity.*;
 import com.example.Backend.mapper.ProjectMapper;
+import com.example.Backend.repository.AdminRepository;
 import com.example.Backend.repository.CourseRepository;
 import com.example.Backend.repository.ProjectRepository;
 import com.example.Backend.repository.StudentRepository;
 import com.example.Backend.repository.TechnologyRepository;
+import com.example.Backend.service.AuditLogService;
 import com.example.Backend.service.ProjectService;
 import com.example.Backend.dto.request.ProjectUpdateRequest;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +41,8 @@ public class ProjectServiceImpl implements ProjectService {
     private final CourseRepository courseRepository;
     private final ProjectMapper projectMapper;
     private final CloudinaryService cloudinaryService;
+    private final AdminRepository adminRepository;
+    private final AuditLogService auditLogService;
 
     @Override
     @Transactional
@@ -208,6 +212,10 @@ public class ProjectServiceImpl implements ProjectService {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đồ án"));
 
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Admin admin = adminRepository.findByUser_Email(email)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy admin đang thao tác"));
+
         project.setStatus(request.getStatus());
         if (request.getAdminNote() != null && !request.getAdminNote().trim().isEmpty()) {
             project.setAdminNote(request.getAdminNote());
@@ -215,6 +223,11 @@ public class ProjectServiceImpl implements ProjectService {
             project.setAdminNote(null);
         }
         projectRepository.save(project);
+        if (request.getStatus() == ProjectStatus.APPROVED) {
+            auditLogService.saveLog(admin.getUser().getId(), project.getId(), "Duyệt đồ án");
+        } else if (request.getStatus() == ProjectStatus.REJECTED) {
+            auditLogService.saveLog(admin.getUser().getId(), project.getId(), "Từ chối đồ án");
+        }
     }
 
     @Override

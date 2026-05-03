@@ -11,6 +11,7 @@ import com.example.Backend.exception.ResourceNotFoundException;
 import com.example.Backend.mapper.CompanyMapper;
 import com.example.Backend.repository.AdminRepository;
 import com.example.Backend.repository.CompanyRepository;
+import com.example.Backend.service.AuditLogService;
 import com.example.Backend.service.CompanyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,6 +27,7 @@ public class CompanyServiceImpl implements CompanyService {
     private final CompanyMapper companyMapper;
     private final AdminRepository adminRepository;
     private final CloudinaryService cloudinaryService;
+    private final AuditLogService auditLogService;
 
     @Override
     public CompanyResponse getCompanyById(Long id) {
@@ -54,8 +56,10 @@ public class CompanyServiceImpl implements CompanyService {
                 if (newStatus == CompanyStatus.APPROVED) {
                     company.setIsVerified(true);
                     company.setVerifiedAt(LocalDateTime.now());
+                    auditLogService.saveLog(admin.getUser().getId(), company.getId(), "Duyệt công ty");
                 } else if (newStatus == CompanyStatus.REJECTED) {
                     company.setIsVerified(false);
+                    auditLogService.saveLog(admin.getUser().getId(), company.getId(), "Từ chối công ty");
                 }
             } catch (IllegalArgumentException e) {
 
