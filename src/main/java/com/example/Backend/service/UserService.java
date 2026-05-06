@@ -19,6 +19,7 @@ public interface UserService {
     User findByEmail(String email);
     boolean existsByEmail(String email);
     void changePassword(String email, String oldPassword, String newPassword) throws BadRequestException;
+    void forgotPassword(String email) throws BadRequestException;
     LoginResponse getUserByEmail(String email);
     LoginResponse getCurrentUser();
 }
