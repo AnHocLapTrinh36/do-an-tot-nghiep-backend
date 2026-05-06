@@ -3,6 +3,7 @@ package com.example.Backend.service.Implement;
 import com.example.Backend.dto.request.LoginRequest;
 import com.example.Backend.dto.response.LoginResponse;
 import com.example.Backend.entity.*;
+import com.example.Backend.util.PasswordGenerator;
 
 import com.example.Backend.mapper.AdminMapper;
 import com.example.Backend.mapper.StudentMapper;
@@ -79,7 +80,7 @@ public class UserServiceImpl implements UserService {
         user.setRole(request.getRole());
         user.setProvider(Provider.LOCAL);
         user.setIsActive(true);
-        user.setEmailVerified(false);
+        user.setEmailVerified(request.isCreatedByAdmin());
         User savedUser = userRepository.save(user);
 
         ///tạo student
@@ -138,8 +139,9 @@ public class UserServiceImpl implements UserService {
             adminRepository.save(admin);
         }
         /// tạo company
-        //Gửi email xác thực
-        emailService.sendVerificationEmail(user); //gửi mail + kèm link xác thực chủ email
+        if (!request.isCreatedByAdmin()) {
+            emailService.sendVerificationEmail(user); // gửi mail xác thực cho tài khoản tự đăng ký
+        }
         return userMapper.toDto(savedUser);
     }
 
@@ -260,6 +262,22 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean existsByEmail(String email) {
         return userRepository.existsByEmail(email);
+    }
+
+    @Override
+    @Transactional
+    public void forgotPassword(String email) throws BadRequestException {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BadRequestException("Không tìm thấy tài khoản với email đã cung cấp."));
+
+        if (!user.getIsActive()) {
+            throw new BadRequestException("Tài khoản đã bị khóa. Không thể cấp lại mật khẩu.");
+        }
+
+        String newPassword = PasswordGenerator.generateNumericPassword(8);
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        emailService.sendForgotPasswordEmail(user, newPassword);
     }
 
 }

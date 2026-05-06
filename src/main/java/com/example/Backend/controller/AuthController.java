@@ -1,7 +1,8 @@
 package com.example.Backend.controller;
 
-import com.example.Backend.dto.request.LoginRequest;
 import com.example.Backend.dto.apiResponse.ApiResponse;
+import com.example.Backend.dto.request.ForgotPasswordRequest;
+import com.example.Backend.dto.request.LoginRequest;
 import com.example.Backend.dto.request.RegisterRequest;
 import com.example.Backend.dto.response.LoginResponse;
 import com.example.Backend.dto.response.RegisterResponse;
@@ -17,7 +18,12 @@ import org.apache.coyote.BadRequestException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Optional;
 
@@ -30,9 +36,8 @@ public class AuthController {
     private final VerificationTokenRepository tokenRepository;
     private final UserRepository userRepository;
 
-    /// Đăng ký dành cho student + company
     @PostMapping("/register")
-    @Operation(summary = "Đăng ký cho sinh viên + company")
+    @Operation(summary = "Đăng ký cho sinh viên và doanh nghiệp")
     public ResponseEntity<ApiResponse<RegisterResponse>> register(
             @Valid @RequestBody RegisterRequest request) throws BadRequestException {
         request.setCreatedByAdmin(false);
@@ -44,62 +49,64 @@ public class AuthController {
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-    /// Đăng ký dành cho teacher + admin
+
     @PostMapping("/admin/register")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Đăng ký cho teacher(admin đăng ký cho teacher) + admin")
-    public ResponseEntity<ApiResponse<RegisterResponse>> adminRegister(@Valid @RequestBody RegisterRequest request) throws BadRequestException {
+    @Operation(summary = "Admin tạo tài khoản cho teacher hoặc admin")
+    public ResponseEntity<ApiResponse<RegisterResponse>> adminRegister(
+            @Valid @RequestBody RegisterRequest request) throws BadRequestException {
         request.setCreatedByAdmin(true);
         RegisterResponse registeredUser = userService.register(request);
         ApiResponse<RegisterResponse> response = ApiResponse.success(
-                "Đăng ký thành công tài khoàn thành công - Role user:" + registeredUser.getRole(),
+                "Đăng ký tài khoản thành công - Role user: " + registeredUser.getRole(),
                 registeredUser,
                 HttpStatus.CREATED.value()
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-    /// login hệ thống
+
     @PostMapping("/login")
-    @Operation(summary = "đăng nhập hệ thống")
-    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) throws BadRequestException {
+    @Operation(summary = "Đăng nhập hệ thống")
+    public ResponseEntity<ApiResponse<LoginResponse>> login(
+            @Valid @RequestBody LoginRequest request) throws BadRequestException {
         LoginResponse loginResponse = userService.login(request);
         ApiResponse<LoginResponse> response = ApiResponse.success(
                 "Đăng nhập thành công",
                 loginResponse,
-                200);
+                HttpStatus.OK.value()
+        );
         return ResponseEntity.ok(response);
     }
-    /// xác thực email
+
     @GetMapping("/verify")
-    @Operation(summary = "xác thực mail qua link khi user click xác nhận")
+    @Operation(summary = "Xác thực mail qua link khi user click xác nhận")
     public ResponseEntity<?> verifyEmail(@RequestParam("token") String token) {
         try {
             Optional<VerificationToken> optToken = tokenRepository.findByToken(token);
-            //tim trong token trong db
             if (optToken.isEmpty()) {
                 return ResponseEntity.badRequest().body("Token không hợp lệ.");
             }
+
             VerificationToken verificationToken = optToken.get();
-            //check hiệu lực token
             if (verificationToken.isExpired()) {
                 return ResponseEntity.badRequest().body("Token đã hết hạn.");
             }
-            //lấy obj user
-            User user = verificationToken.getUser(); //Entity
 
+            User user = verificationToken.getUser();
             user.setEmailVerified(true);
             userRepository.save(user);
-            //xóa token sau khi user xác thực email
             tokenRepository.delete(verificationToken);
             return ResponseEntity.ok("Xác thực email thành công! Bạn có thể đăng nhập ngay.");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Có lỗi xảy ra: " + e.getMessage());
+        } catch (Exception exception) {
+            return ResponseEntity.badRequest().body("Có lỗi xảy ra: " + exception.getMessage());
         }
     }
 
-    /// page profile
-    ///  @PostMapping("/forgot-password")
-//    @Operation(summary = "quên mật khẩu")
-    ///nhận mail request ->check->tạo mk mới trong db -> gửi mk mới qua mail cho user -> kết thúc
-
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Quên mật khẩu")
+    public ResponseEntity<ApiResponse<String>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request) throws BadRequestException {
+        userService.forgotPassword(request.getEmail());
+        return ResponseEntity.ok(ApiResponse.success("Mật khẩu mới đã được gửi qua email."));
+    }
 }
