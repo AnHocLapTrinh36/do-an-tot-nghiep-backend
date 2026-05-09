@@ -13,6 +13,7 @@ import com.example.Backend.exception.ResourceNotFoundException;
 import com.example.Backend.repository.*;
 import com.example.Backend.service.AuditLogService;
 import com.example.Backend.service.CvService;
+import com.example.Backend.service.NotificationService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -51,6 +52,7 @@ public class CvServiceImpl implements CvService {
     private final JobApplicationRepository jobApplicationRepository;
     private final CvUpdateRequestRepository cvUpdateRequestRepository;
     private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -98,6 +100,15 @@ public class CvServiceImpl implements CvService {
         }
 
         Cv savedCv = cvRepository.save(cv);
+        List<User> admins = userRepository.findByRole(RoleType.ADMIN);
+        for (User admin : admins) {
+            notificationService.createNotification(
+                    admin.getEmail(),
+                    "NEW_CV_PENDING",
+                    "Có CV mới cần kiểm duyệt",
+                    "Sinh viên " + student.getUser().getFullName() + " vừa tạo CV mới: " + cv.getTitle()
+            );
+        }
         return toResponse(savedCv);
     }
 
@@ -152,7 +163,15 @@ public class CvServiceImpl implements CvService {
 
         // Refresh entity để lấy đầy đủ relation (cvFile)
         savedCv = cvRepository.findById(savedCv.getId()).orElse(savedCv);
-
+//        List<User> admins = userRepository.findByRole(RoleType.ADMIN);
+//        for (User admin : admins) {
+//            notificationService.createNotification(
+//                    admin.getEmail(),
+//                    "NEW_CV_PENDING",
+//                    "Có CV mới cần kiểm duyệt",
+//                    "Sinh viên " + student.getUser().getFullName() + " vừa tạo CV mới: " + cv.getTitle()
+//            );
+//        }
         return toResponse(savedCv);
     }
 
@@ -217,6 +236,15 @@ public class CvServiceImpl implements CvService {
         }
 
         Cv updatedCv = cvRepository.save(cv);
+        List<User> admins = userRepository.findByRole(RoleType.ADMIN);
+        for (User admin : admins) {
+            notificationService.createNotification(
+                    admin.getEmail(),
+                    "CV_UPDATED_PENDING",
+                    "CV đã được cập nhật - Chờ duyệt lại",
+                    "Sinh viên " + student.getUser().getFullName() + " đã cập nhật lại nội dung CV '" + cv.getTitle() + "'. Vui lòng kiểm tra và duyệt lại."
+            );
+        }
         return toResponse(updatedCv);
     }
 
@@ -397,13 +425,19 @@ public class CvServiceImpl implements CvService {
 
         // Cập nhật trạng thái bằng Enum
         cv.setStatus(status);
-
+        String notiType = "";
+        String notiTitle = "";
+        String notiContent = "";
         if (status == Status.APPROVED) {
             // Nếu duyệt -> Cập nhật người duyệt và bật public cho CV
             cv.setApprovedBy(currentAdmin.getId());
             cv.setIsPublic(true);
             cv.setAdminNote(null);
             auditLogService.saveLog(currentAdmin.getUser().getId(), cv.getId(), "Duyệt CV");
+
+            notiType = "CV_APPROVED";
+            notiTitle = "CV của bạn đã được phê duyệt!";
+            notiContent = "Chúc mừng! CV '" + cv.getTitle() + "' của bạn đã được duyệt. Bây giờ bạn có thể dùng nó để ứng tuyển các công việc.";
         } else {
             // Từ chối hoặc trả về Pending thì gỡ Public
             cv.setApprovedBy(null);
@@ -411,10 +445,21 @@ public class CvServiceImpl implements CvService {
             cv.setAdminNote(adminNote);
             if (status == Status.REJECTED) {
                 auditLogService.saveLog(currentAdmin.getUser().getId(), cv.getId(), "Từ chối CV");
+                notiType = "CV_REJECTED";
+                notiTitle = "Hồ sơ CV bị từ chối";
+                notiContent = "Rất tiếc, CV '" + cv.getTitle() + "' đã bị từ chối. Lý do: " + adminNote;
             }
         }
 
         Cv updatedCv = cvRepository.save(cv);
+        if (!notiType.isEmpty()) {
+            notificationService.createNotification(
+                    cv.getStudent().getUser().getEmail(),
+                    notiType,
+                    notiTitle,
+                    notiContent
+            );
+        }
         return toResponse(updatedCv);
     }
 

@@ -61,4 +61,6 @@ public class ProjectFavoriteController {
         boolean status = projectFavoriteService.isProjectFavorited(projectId, authentication.getName());
         return ApiResponse.success("Lay trang thai yeu thich thanh cong", status);
     }
+
+   
 }

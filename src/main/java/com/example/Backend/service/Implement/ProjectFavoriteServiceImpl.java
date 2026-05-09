@@ -80,6 +80,6 @@ public class ProjectFavoriteServiceImpl implements ProjectFavoriteService {
     public boolean isProjectFavorited(Long projectId, String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Nguoi dung khong ton tai"));
-        return projectFavoriteRepository.existsByUserIdAndProjectId(projectId, user.getId());
+        return projectFavoriteRepository.existsByUserIdAndProjectId(user.getId(), projectId);
     }
 }
