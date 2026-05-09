@@ -8,6 +8,8 @@ import com.example.Backend.repository.NotificationRepository;
 import com.example.Backend.repository.UserRepository;
 import com.example.Backend.service.NotificationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +21,8 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final NotificationMapper notificationMapper;
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;//dùng cho websocket
 
     @Override
     public List<NotificationResponse> getMyNotifications(String email) {
@@ -51,7 +55,9 @@ public class NotificationServiceImpl implements NotificationService {
                 .content(content)
                 .isRead(false)
                 .build();
-
+        String destination = "/topic/notifications/" + notification.getUser().getEmail();
+        System.out.println("email cuar nguoi dung la:" + notification.getUser().getEmail());
+        messagingTemplate.convertAndSend(destination, "Bạn vừa nhận được thông báo mới");
         notificationRepository.save(notification);
     }
 }

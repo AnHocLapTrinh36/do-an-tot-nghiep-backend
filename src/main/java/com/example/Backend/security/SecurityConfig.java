@@ -68,7 +68,8 @@ public class SecurityConfig {
                                 "/oauth2/**",
                                 "/login/oauth2/code/**",
                                 "/error",
-                                "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
+                                "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
+                                "/ws-pos/**"
                         ).permitAll()
                         //.requestMatchers("/api/student/{mssv}").hasAnyRole("ADMIN", "TEACHER")
                         .anyRequest().authenticated()
