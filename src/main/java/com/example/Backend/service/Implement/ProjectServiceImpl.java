@@ -8,9 +8,11 @@ import com.example.Backend.entity.*;
 import com.example.Backend.mapper.ProjectMapper;
 import com.example.Backend.repository.AdminRepository;
 import com.example.Backend.repository.CourseRepository;
+import com.example.Backend.repository.ProjectPurchaseRepository;
 import com.example.Backend.repository.ProjectRepository;
 import com.example.Backend.repository.StudentRepository;
 import com.example.Backend.repository.TechnologyRepository;
+import com.example.Backend.repository.UserRepository;
 import com.example.Backend.service.AuditLogService;
 import com.example.Backend.service.ProjectService;
 import com.example.Backend.dto.request.ProjectUpdateRequest;
@@ -43,6 +45,8 @@ public class ProjectServiceImpl implements ProjectService {
     private final CloudinaryService cloudinaryService;
     private final AdminRepository adminRepository;
     private final AuditLogService auditLogService;
+    private final ProjectPurchaseRepository projectPurchaseRepository;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional
@@ -273,7 +277,9 @@ public class ProjectServiceImpl implements ProjectService {
 
             project.setViewCount(project.getViewCount() + 1);
             projectRepository.save(project);
-            return projectMapper.toResponse(project);
+            ProjectResponse response = projectMapper.toResponse(project);
+            response.setIsPurchased(false);
+            return response;
         }
 
         String currentEmail = auth.getName();
@@ -307,7 +313,13 @@ public class ProjectServiceImpl implements ProjectService {
         project.setViewCount(project.getViewCount() + 1);
         projectRepository.save(project);
 
-        return projectMapper.toResponse(project);
+        ProjectResponse response = projectMapper.toResponse(project);
+        boolean isPurchased = userRepository.findByEmail(currentEmail)
+                .map(user -> projectPurchaseRepository.existsByProjectIdAndUserId(project.getId(), user.getId()))
+                .orElse(false);
+        response.setIsPurchased(isPurchased);
+
+        return response;
     }
 
 

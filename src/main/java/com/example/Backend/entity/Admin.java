@@ -23,7 +23,7 @@ public class Admin {
     @Column(name = "admin_code", unique = true, length = 50)
     private String adminCode;
 
-    @Column(name = "position", length = 50)
+    @Column(name = "position", columnDefinition = "NVARCHAR(50)")
     private String position;
 
     @Column(name = "phone", length = 20)

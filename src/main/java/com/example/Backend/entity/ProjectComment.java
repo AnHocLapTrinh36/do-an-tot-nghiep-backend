@@ -27,7 +27,7 @@ public class ProjectComment {
     @JoinColumn(name = "user_id", nullable = false)
     private User user; // Dùng Entity User chung của hệ thống
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(columnDefinition = "NVARCHAR(MAX)", nullable = false)
     private String content;
 
     @CreationTimestamp

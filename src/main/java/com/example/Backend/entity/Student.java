@@ -48,15 +48,15 @@ public class Student {
     @Column(length = 15)
     private String phone;
 
-    @Column(length = 255)
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String address;
 
     private Boolean gender;
 
-    @Column(length = 20)
+    @Column(columnDefinition = "NVARCHAR(20)")
     private String course;
 
-    @Column(length = 30)
+    @Column(columnDefinition = "NVARCHAR(30)")
     private String status;
 
     @CreationTimestamp

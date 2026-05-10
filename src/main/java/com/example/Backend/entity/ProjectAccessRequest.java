@@ -29,7 +29,7 @@ public class ProjectAccessRequest {
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(columnDefinition = "NVARCHAR(MAX)", nullable = false)
     private String reason;
 
     @Enumerated(EnumType.STRING)
@@ -42,7 +42,7 @@ public class ProjectAccessRequest {
     @Column(name = "processed_at")
     private LocalDateTime processedAt;
 
-    @Column(name = "approval_note", columnDefinition = "TEXT")
+    @Column(name = "approval_note", columnDefinition = "NVARCHAR(MAX)")
     private String approvalNote;
 
     @PrePersist

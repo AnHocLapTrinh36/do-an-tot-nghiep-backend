@@ -23,7 +23,7 @@ import java.util.List;
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
-public class SecurityConfig {
+public class gSecurityConfig {
 
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
@@ -67,6 +67,7 @@ public class SecurityConfig {
                                 "/api/auth/verify/**",
                                 "/oauth2/**",
                                 "/login/oauth2/code/**",
+                                "/payments/webhook",
                                 "/error",
                                 "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"
                         ).permitAll()

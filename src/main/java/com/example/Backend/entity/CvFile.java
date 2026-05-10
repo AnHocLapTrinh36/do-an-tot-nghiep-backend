@@ -16,7 +16,7 @@ public class CvFile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "file_name", nullable = false)
+    @Column(name = "file_name", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String fileName;        // Tên file gốc khi upload
 
     @Column(name = "file_path", nullable = false)

@@ -12,6 +12,7 @@ import com.example.Backend.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,9 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
     private final JwtService jwtService; //inject -> create jwt
     private final UserRepository userRepository;
+
+    @Value("${app.frontend.url:http://localhost:5173}")
+    private String frontendUrl;
     @Override
     /// spring securiy sẽ tự động gọi khi login gg thành công
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -42,6 +46,6 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         userRepository.save(user);
         String token = jwtService.generateToken(user);
 
-        response.sendRedirect("http://localhost:5173/oauth2-success?token=" + token);
+        response.sendRedirect(frontendUrl + "/oauth2-success?token=" + token);
     }
 }
