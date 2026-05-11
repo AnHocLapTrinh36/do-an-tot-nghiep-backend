@@ -25,7 +25,7 @@ public class JobFavorite {
     @JoinColumn(name = "post_id")
     private JobPost jobPost;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String note;
 
     private LocalDateTime createdAt = LocalDateTime.now();

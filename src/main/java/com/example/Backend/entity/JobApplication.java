@@ -38,6 +38,7 @@ public class JobApplication {
     @CreationTimestamp
     private LocalDateTime appliedAt;
 
+    @Column(name = "company_note", columnDefinition = "NVARCHAR(MAX)")
     private String companyNote;
 
     private Long processedBy;

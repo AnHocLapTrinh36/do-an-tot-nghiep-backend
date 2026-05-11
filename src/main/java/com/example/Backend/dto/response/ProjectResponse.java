@@ -31,6 +31,8 @@ public class ProjectResponse {
     private Integer viewCount;
     @JsonProperty("download_count")
     private Integer downloadCount;
+    @JsonProperty("is_purchased")
+    private Boolean isPurchased;
 
     // Trả về danh sách chi tiết thay vì chỉ ID
     private List<TechnologyResponse> technologies;

@@ -67,6 +67,7 @@ public class SecurityConfig {
                                 "/api/auth/verify/**",
                                 "/oauth2/**",
                                 "/login/oauth2/code/**",
+                                "/payments/webhook",
                                 "/error",
                                 "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
                                 "/ws-pos/**"

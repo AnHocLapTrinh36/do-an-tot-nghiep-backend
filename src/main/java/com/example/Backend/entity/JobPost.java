@@ -21,14 +21,17 @@ public class JobPost {
     @JoinColumn(name = "company_id")
     private Company company;
 
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String title;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String description;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String requirements;
+    @Column(columnDefinition = "NVARCHAR(50)")
     private String jobType;
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String workLocation;
     private String jdFile;
 
@@ -50,5 +53,6 @@ public class JobPost {
     private Double salary;
     // lưu dạng json, lưu các ngôn ngữ, hoặc framework
 
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String tags;
 }

@@ -22,7 +22,7 @@ public class Cv {
     @JoinColumn(name = "student_id", nullable = false)
     private Student student;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "NVARCHAR(255)")
     private String title;
 
     @Enumerated(EnumType.STRING)
@@ -49,7 +49,7 @@ public class Cv {
     @Column(name = "download_count")
     private Integer downloadCount = 0;
 
-    @Column(name = "admin_note")
+    @Column(name = "admin_note", columnDefinition = "NVARCHAR(MAX)")
     private String adminNote;
 
     @OneToOne(mappedBy = "cv", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

@@ -33,7 +33,7 @@ public class ProjectEvaluation {
     @JoinColumn(name = "teacher_id", nullable = false)
     private Teacher teacher;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(columnDefinition = "NVARCHAR(MAX)", nullable = false)
     private String suggestions;
 
     @CreationTimestamp

@@ -19,20 +19,23 @@ public class Company {
     @JoinColumn(name = "user_id", unique = true)
     private User user;
 
-    @Column(name = "company_name", nullable = false)
+    @Column(name = "company_name", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String companyName;
 
     @Column(name = "tax_code", unique = true)
     private String taxCode;
 
     private String website;
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String address;
 
     @Column(name = "avatar_url")
     private String avatarUrl;
 
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String description;
     private String phone;
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String location;
 
     @Enumerated(EnumType.STRING)

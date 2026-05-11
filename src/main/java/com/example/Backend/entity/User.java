@@ -29,7 +29,7 @@ public class User {
     @JsonIgnore
     private String password;  // NULL nếu chỉ GOOGLE
 
-    @Column(name = "full_name", nullable = false, length = 255)
+    @Column(name = "full_name", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String fullName;
     /// Map Student
     @OneToOne(mappedBy = "user", fetch = FetchType.EAGER, cascade = CascadeType.ALL)

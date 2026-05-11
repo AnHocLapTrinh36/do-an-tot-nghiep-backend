@@ -32,9 +32,10 @@ public class Project {
     @JoinColumn(name = "course_id")
     private Course course;
 
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String title;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String description;
 
     @Column(name = "source_code_url")
@@ -62,7 +63,7 @@ public class Project {
     @Column(name = "price_download")
     private BigDecimal priceDownload;
 
-    @Column(name = "admin_note", columnDefinition = "TEXT")
+    @Column(name = "admin_note", columnDefinition = "NVARCHAR(MAX)")
     private String adminNote;
 
 

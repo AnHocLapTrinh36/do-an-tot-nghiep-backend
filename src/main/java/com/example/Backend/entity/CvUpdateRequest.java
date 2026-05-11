@@ -27,7 +27,7 @@ public class CvUpdateRequest {
     @JoinColumn(name = "student_id", nullable = false)
     private Student student;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String reason;
 
     @Enumerated(EnumType.STRING)

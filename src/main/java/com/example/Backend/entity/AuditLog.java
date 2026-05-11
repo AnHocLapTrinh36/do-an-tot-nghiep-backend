@@ -34,7 +34,7 @@ public class AuditLog {
     @Column(name = "target_id", nullable = false)
     private Long targetId;
 
-    @Column(name = "description", nullable = false, length = 255)
+    @Column(name = "description", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String description;
 
     @Column(name = "created_at", nullable = false)
