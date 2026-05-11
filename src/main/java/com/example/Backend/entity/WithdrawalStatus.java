@@ -2,6 +2,6 @@ package com.example.Backend.entity;
 
 public enum WithdrawalStatus {
     PENDING,
-    COMPLETED,
+    APPROVED,
     REJECTED
 }

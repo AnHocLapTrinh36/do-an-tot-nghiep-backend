@@ -13,9 +13,12 @@ import com.example.Backend.repository.ProjectRepository;
 import com.example.Backend.repository.StudentRepository;
 import com.example.Backend.repository.TechnologyRepository;
 import com.example.Backend.repository.UserRepository;
+import com.example.Backend.repository.*;
 import com.example.Backend.service.AuditLogService;
+import com.example.Backend.service.NotificationService;
 import com.example.Backend.service.ProjectService;
 import com.example.Backend.dto.request.ProjectUpdateRequest;
+import com.example.Backend.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -45,8 +48,9 @@ public class ProjectServiceImpl implements ProjectService {
     private final CloudinaryService cloudinaryService;
     private final AdminRepository adminRepository;
     private final AuditLogService auditLogService;
-    private final ProjectPurchaseRepository projectPurchaseRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
+    private final ProjectPurchaseRepository projectPurchaseRepository;
 
     @Override
     @Transactional
@@ -98,7 +102,15 @@ public class ProjectServiceImpl implements ProjectService {
 
         // Lưu xuống DB (Hibernate sẽ tự động Insert Project, Project_Images và Project_Technologies)
         Project savedProject = projectRepository.save(project);
-
+        List<User> admins = userRepository.findByRole(RoleType.ADMIN);
+        for (User admin : admins) {
+            notificationService.createNotification(
+                    admin.getEmail(),
+                    "NEW_PROJECT_SUBMITTED",
+                    "Có đồ án mới được đăng tải",
+                    "Sinh viên " + student.getUser().getFullName() + " vừa đăng dự án: " + savedProject.getTitle()
+            );
+        }
         // Map sang Response trả về
         return projectMapper.toResponse(savedProject);
     }
@@ -181,6 +193,15 @@ public class ProjectServiceImpl implements ProjectService {
 
         //Lưu thay đổi và Map response
         Project savedProject = projectRepository.save(project);
+        List<User> admins = userRepository.findByRole(RoleType.ADMIN);
+        for (User admin : admins) {
+            notificationService.createNotification(
+                    admin.getEmail(),
+                    "PROJECT_UPDATED_PENDING",
+                    "Đồ án đã cập nhật - Cần duyệt lại",
+                    "Sinh viên " + student.getUser().getFullName() + " vừa cập nhật đồ án '" + savedProject.getTitle() + "'. Trạng thái đã chuyển về PENDING, vui lòng kiểm tra lại."
+            );
+        }
         return projectMapper.toResponse(savedProject);
     }
 
@@ -229,8 +250,20 @@ public class ProjectServiceImpl implements ProjectService {
         projectRepository.save(project);
         if (request.getStatus() == ProjectStatus.APPROVED) {
             auditLogService.saveLog(admin.getUser().getId(), project.getId(), "Duyệt đồ án");
+            notificationService.createNotification(
+                    project.getStudent().getUser().getEmail(),
+                    "PROJECT_APPROVED",
+                    "Đồ án của bạn đã được duyệt",
+                    "Chúc mừng! đồ án" + project.getTitle() + "đã được phê duyệt và sẽ hiẻn thị công khai "
+            );
         } else if (request.getStatus() == ProjectStatus.REJECTED) {
             auditLogService.saveLog(admin.getUser().getId(), project.getId(), "Từ chối đồ án");
+            notificationService.createNotification(
+                    project.getStudent().getUser().getEmail(),
+                    "PROJECT_REJECTED",
+                    "Đồ án của bạn đã bị từ chối yêu cầu phê duyệt ",
+                    "Rất tiếc! đồ án" + project.getTitle() + "đã bị từ chối phê duyệt "
+            );
         }
     }
 

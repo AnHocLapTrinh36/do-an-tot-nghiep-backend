@@ -103,7 +103,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
             wallet.setAvailableBalance(currentAvailable.add(withdrawal.getAmount()));
         }
 
-        if (request.getStatus() == WithdrawalStatus.COMPLETED) {
+        if (request.getStatus() == WithdrawalStatus.APPROVED) {
             Wallet wallet = withdrawal.getWallet();
             wallet.setTotalBalance(wallet.getTotalBalance().subtract(withdrawal.getAmount()));
         }

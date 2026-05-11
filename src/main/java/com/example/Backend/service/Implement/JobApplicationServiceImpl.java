@@ -10,6 +10,7 @@ import com.example.Backend.exception.ResourceNotFoundException;
 import com.example.Backend.mapper.JobApplicationMapper;
 import com.example.Backend.repository.*;
 import com.example.Backend.service.JobApplicationService;
+import com.example.Backend.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ public class JobApplicationServiceImpl implements JobApplicationService {
     private final CvRepository cvRepository;
     private final JobApplicationMapper applicationMapper;
     private final CompanyRepository companyRepository;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -64,7 +66,12 @@ public class JobApplicationServiceImpl implements JobApplicationService {
         int currentCount = job.getViewCount() == null ? 0 : job.getViewCount();
         job.setAppliedCount(currentCount + 1);
         jobPostRepository.save(job);
-
+        notificationService.createNotification(
+                job.getCompany().getUser().getEmail(),
+                "NEW_APPLICATION",
+                "Có ứng viên mới ứng tuyển",
+                "Sinh viên " + student.getUser().getFullName() + " đã nộp CV vào vị trí: " + job.getTitle()
+        );
         return applicationMapper.toResponse(savedApp);
     }
 
@@ -102,8 +109,32 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                 .orElseThrow(() -> new RuntimeException("Hồ sơ không tồn tại!"));
         app.setStatus(request.getStatus());
         app.setCompanyNote(request.getCompanyNote());
-        applicationRepository.save(app);
-        return applicationMapper.toResponse(app);
+        JobApplication saved = applicationRepository.save(app);
+
+        String statusStr = request.getStatus().toString();
+        String title = "";
+        String content = "";
+        String type = "";
+
+        if ("APPROVED".equals(statusStr)) {
+            type = "APPLICATION_APPROVED";
+            title = "Hồ sơ của bạn đã được chấp nhận!";
+            content = "Chúc mừng! Công ty " + app.getJobPost().getCompany().getCompanyName() +
+                    " đã duyệt hồ sơ của bạn cho vị trí " + app.getJobPost().getTitle() + ".";
+        } else if ("REJECTED".equals(statusStr)) {
+            type = "APPLICATION_REJECTED";
+            title = "Cập nhật trạng thái ứng tuyển";
+            content = "Rất tiếc, hồ sơ của bạn cho vị trí " + app.getJobPost().getTitle() +
+                    " tại " + app.getJobPost().getCompany().getCompanyName() + " đã không được lựa chọn lần này.";
+        }
+        notificationService.createNotification(
+                app.getStudent().getUser().getEmail(), // Gửi cho sinh viên sở hữu hồ sơ
+                type,
+                title,
+                content
+        );
+
+        return applicationMapper.toResponse(saved);
     }
 
     @Override

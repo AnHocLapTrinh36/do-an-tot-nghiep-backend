@@ -52,25 +52,25 @@ public class PaymentController {
 //        );
 //    }
 
-    @GetMapping("/api/payments/orders/me")
-    @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Xem danh sach order thanh toan cua toi")
-    public ApiResponse<List<OrderPaymentResponse>> getMyOrders(Authentication authentication) {
-        return ApiResponse.success(
-                "Lay danh sach order thanh cong",
-                paymentService.getMyOrders(authentication.getName())
-        );
-    }
+//    @GetMapping("/api/payments/orders/me")
+//    @PreAuthorize("isAuthenticated()")
+//    @Operation(summary = "Xem danh sach order thanh toan cua toi")
+//    public ApiResponse<List<OrderPaymentResponse>> getMyOrders(Authentication authentication) {
+//        return ApiResponse.success(
+//                "Lay danh sach order thanh cong",
+//                paymentService.getMyOrders(authentication.getName())
+//        );
+//    }
 
-    @GetMapping("/api/payments/purchases/me")
-    @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "Xem danh sach project da mua source code")
-    public ApiResponse<List<ProjectPurchaseResponse>> getMyPurchases(Authentication authentication) {
-        return ApiResponse.success(
-                "Lay danh sach project da mua thanh cong",
-                paymentService.getMyPurchases(authentication.getName())
-        );
-    }
+//    @GetMapping("/api/payments/purchases/me")
+//    @PreAuthorize("isAuthenticated()")
+//    @Operation(summary = "Xem danh sach project da mua source code")
+//    public ApiResponse<List<ProjectPurchaseResponse>> getMyPurchases(Authentication authentication) {
+//        return ApiResponse.success(
+//                "Lay danh sach project da mua thanh cong",
+//                paymentService.getMyPurchases(authentication.getName())
+//        );
+//    }
 
     @GetMapping("/api/wallets/me")
     @PreAuthorize("hasRole('STUDENT')")

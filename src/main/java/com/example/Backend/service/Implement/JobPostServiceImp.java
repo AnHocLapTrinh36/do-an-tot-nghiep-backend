@@ -9,6 +9,7 @@ import com.example.Backend.mapper.JobMapper;
 import com.example.Backend.repository.*;
 import com.example.Backend.service.AuditLogService;
 import com.example.Backend.service.JobPostService;
+import com.example.Backend.service.NotificationService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -34,6 +35,7 @@ public class JobPostServiceImp implements JobPostService {
     private final JobFavoriteRepository favoriteRepository;
     private final JobApplicationRepository jobApplicationRepository;
     private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
 
     private String convertTagsToJson(List<String> tags) {
         if (tags == null || tags.isEmpty()) return null;
@@ -69,7 +71,17 @@ public class JobPostServiceImp implements JobPostService {
                 .tags(convertTagsToJson(request.getTags()))
                 .build();
         handleJdFileUpload(request, job);
-        return jobMapper.toResponse(jobPostRepository.save(job));
+        JobPost savedJob = jobPostRepository.save(job);
+        List<User> admins = userRepository.findByRole(RoleType.ADMIN);
+        for (User admin : admins) {
+            notificationService.createNotification(
+                    admin.getEmail(),
+                    "NEW_JOB_POST",
+                    "Yêu cầu duyệt tin đăng mới",
+                    "Doanh nghiệp " + company.getCompanyName() + " vừa đăng tin: " + job.getTitle()
+            );
+        }
+        return jobMapper.toResponse(savedJob);
     }
 
     @Override
@@ -82,8 +94,10 @@ public class JobPostServiceImp implements JobPostService {
             throw new RuntimeException("Bạn không có quyền chỉnh sửa tin tuyển dụng này!");
         }
         //nếu tin đã được duyêt mà sửa nội dung -> Bắt admin duyệt lại
-        if (job.getStatus() == JobStatus.APPROVED) {
+        boolean ok = false;
+        if (job.getStatus() == JobStatus.APPROVED || job.getStatus() == JobStatus.REJECTED) {
             job.setStatus(JobStatus.PENDING);
+            ok = true;
         }
         job.setTitle(request.getTitle());
         job.setDescription(request.getDescription());
@@ -95,7 +109,22 @@ public class JobPostServiceImp implements JobPostService {
         job.setWorkLocation(request.getWorkLocation());
         job.setTags(convertTagsToJson(request.getTags()));
         handleJdFileUpload(request, job);
-        return jobMapper.toResponse(jobPostRepository.save(job));
+        JobPost savedJob = jobPostRepository.save(job);
+
+
+        if (ok) {
+            List<User> admins = userRepository.findByRole(RoleType.ADMIN);
+            for (User admin : admins) {
+                notificationService.createNotification(
+                        admin.getEmail(),
+                        "JOB_UPDATED_PENDING",
+                        "Tin tuyển dụng đã sửa - Chờ duyệt lại",
+                        "Doanh nghiệp " + job.getCompany().getCompanyName() + " đã cập nhật nội dung tin '" + job.getTitle() + "'. Vui lòng kiểm tra lại."
+                );
+            }
+        }
+
+        return jobMapper.toResponse(savedJob);
     }
 
     @Override
@@ -117,20 +146,37 @@ public class JobPostServiceImp implements JobPostService {
     @Override
     @Transactional
     public JobResponse approveJob(Long id, String action, String adminEmail) {
+        boolean ok = false;
         JobPost job = jobPostRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tin"));
         User admin = userRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy admin thực hiện"));
         //kiem tra xem phai Approve khonh
-        if ("APPROVE".equalsIgnoreCase(action)) {
+        if ("APPROVE".equalsIgnoreCase(action.trim())) {
             job.setStatus(JobStatus.APPROVED);
             auditLogService.saveLog(admin.getId(), job.getId(), "Duyệt bài tuyển dụng");
+            ok = true;
         } else {
             job.setStatus(JobStatus.REJECTED);
             auditLogService.saveLog(admin.getId(), job.getId(), "Từ chối bài tuyển dụng");
         }
         job.setApprovedBy(admin);
         job.setApprovedAt(LocalDateTime.now());
+        if (ok) {
+            notificationService.createNotification(
+                    job.getCompany().getUser().getEmail(),
+                    "ApprovedJob",
+                    "Admin đã duyệt bài viết của bạn",
+                    "bài viết " + job.getTitle() + "đã được duyệt"
+            );
+        } else {
+            notificationService.createNotification(
+                    job.getCompany().getUser().getEmail(),
+                    "RejectedJob",
+                    "Admin đã duyệt bài viết của bạn",
+                    "bài viết " + job.getTitle() + "đã bị từ chối"
+            );
+        }
         return jobMapper.toResponse(jobPostRepository.save(job));
     }
 
