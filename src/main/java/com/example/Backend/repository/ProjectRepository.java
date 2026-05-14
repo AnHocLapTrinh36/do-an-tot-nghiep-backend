@@ -1,6 +1,7 @@
 package com.example.Backend.repository;
 
 import com.example.Backend.entity.Project;
+import com.example.Backend.entity.ProjectStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -44,4 +45,28 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "              WHEN p.status = 'REJECTED' THEN 2 " +
             "              ELSE 3 END ASC, p.createdAt DESC")
     Page<Project> findAllProjectsForAdmin(Pageable pageable);
+
+    List<Project> findTop10ByStatusOrderByViewCountDesc(ProjectStatus status);
+
+    @Query("""
+            SELECT DISTINCT p
+            FROM Project p
+            LEFT JOIN p.technologies t
+            WHERE p.status = 'APPROVED'
+              AND (:keyword IS NULL
+                   OR LOWER(p.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(p.description) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(p.student.user.fullName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(t.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            ORDER BY p.viewCount DESC, p.createdAt DESC
+            """)
+    List<Project> searchApprovedProjectsForAi(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query("""
+            SELECT DISTINCT p
+            FROM Project p
+            LEFT JOIN FETCH p.technologies
+            WHERE p.status = 'APPROVED'
+            """)
+    List<Project> findApprovedProjectsWithTechnologiesForAi();
 }

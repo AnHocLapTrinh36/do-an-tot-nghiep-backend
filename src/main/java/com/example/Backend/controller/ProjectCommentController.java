@@ -1,6 +1,5 @@
 package com.example.Backend.controller;
 
-
 import com.example.Backend.dto.request.CommentRequest;
 import com.example.Backend.dto.response.CommentResponse;
 import com.example.Backend.service.ProjectCommentService;
@@ -18,16 +17,15 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProjectCommentController {
     private final ProjectCommentService projectCommentService;
-    // Lấy danh sách comment của 1 project
+
     @GetMapping("/{projectId}/comments")
     @Operation(summary = "Lấy danh sách comment của 1 project")
     public ResponseEntity<List<CommentResponse>> getComments(@PathVariable Long projectId) {
         return ResponseEntity.ok(projectCommentService.getCommentsByProject(projectId));
     }
 
-    // Thêm comment vào 1 project
     @PostMapping("/{projectId}/comments")
-    @Operation(summary = "Thêm comment vào 1 project (free thì ai cũng có  thể  cmt, paid thì chỉ những người mua (chưa làm vì đang đợi flow thanh toán)")
+    @Operation(summary = "Thêm comment vào 1 project: project miễn phí cho phép bình luận, project có phí chỉ người đã mua source code mới được bình luận")
     public ResponseEntity<CommentResponse> addComment(
             @PathVariable Long projectId,
             @RequestBody CommentRequest request) {

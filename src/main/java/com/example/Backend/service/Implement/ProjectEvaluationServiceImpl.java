@@ -6,7 +6,6 @@ import com.example.Backend.dto.response.ProjectEvaluationResponse;
 import com.example.Backend.dto.response.TeacherProjectEvaluationItemResponse;
 import com.example.Backend.entity.Project;
 import com.example.Backend.entity.ProjectEvaluation;
-import com.example.Backend.entity.ProjectStatus;
 import com.example.Backend.entity.Teacher;
 import com.example.Backend.exception.ResourceNotFoundException;
 import com.example.Backend.repository.ProjectEvaluationRepository;
@@ -131,10 +130,6 @@ public class ProjectEvaluationServiceImpl implements ProjectEvaluationService {
     public List<ProjectEvaluationResponse> getEvaluationsByProject(Long projectId) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đồ án"));
-
-        if (project.getStatus() != ProjectStatus.APPROVED) {
-            throw new RuntimeException("Chỉ có thể xem đánh giá giảng viên khi đồ án đã được phê duyệt");
-        }
 
         return projectEvaluationRepository.findByProjectIdOrderByCreatedAtDesc(projectId)
                 .stream()

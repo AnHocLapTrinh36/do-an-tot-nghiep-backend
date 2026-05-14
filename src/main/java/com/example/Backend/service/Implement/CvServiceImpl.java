@@ -64,7 +64,7 @@ public class CvServiceImpl implements CvService {
                 .orElseThrow(() -> new RuntimeException("Student not found"));
 
         // Kiểm tra giới hạn 2 CV
-        long currentCvCount = cvRepository.countByStudentId(student.getId());
+        long currentCvCount = cvRepository.countByStudentIdAndStatusNot(student.getId(), Status.DELETE);
         if (currentCvCount >= 2) {
             throw new RuntimeException("Mỗi sinh viên chỉ được tạo tối đa 2 CV. Bạn đã có "
                     + currentCvCount + " CV.");
@@ -122,9 +122,10 @@ public class CvServiceImpl implements CvService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sinh viên"));
 
         // Kiểm tra giới hạn tối đa 2 CV
-        if (cvRepository.countByStudentId(student.getId()) >= 2) {
+        long currentCvCount = cvRepository.countByStudentIdAndStatusNot(student.getId(), Status.DELETE);
+        if (currentCvCount >= 2) {
             throw new BadRequestException("Mỗi sinh viên chỉ được tạo tối đa 2 CV. Bạn đã có "
-                    + cvRepository.countByStudentId(student.getId()) + " CV.");
+                    + currentCvCount + " CV.");
         }
 
         // Kiểm tra file PDF
@@ -184,7 +185,7 @@ public class CvServiceImpl implements CvService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ sinh viên"));
 
         // Tìm CV thuộc về sinh viên này
-        Cv cv = cvRepository.findByIdAndStudentId(cvId, student.getId())
+        Cv cv = cvRepository.findByIdAndStudentIdAndStatusNot(cvId, student.getId(), Status.DELETE)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy CV hoặc bạn không có quyền chỉnh sửa"));
 
         // XỬ LÝ LOGIC CHẶN NẾU CV ĐÃ APPROVED
@@ -258,7 +259,7 @@ public class CvServiceImpl implements CvService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ sinh viên"));
 
         // Tìm CV
-        Cv cv = cvRepository.findByIdAndStudentId(cvId, student.getId())
+        Cv cv = cvRepository.findByIdAndStudentIdAndStatusNot(cvId, student.getId(), Status.DELETE)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy CV hoặc bạn không có quyền"));
 
         // Kiểm tra CV có đang ở trạng thái APPROVED không
@@ -339,7 +340,7 @@ public class CvServiceImpl implements CvService {
         Student student = studentRepository.findByUser_Email(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Student profile not found for user: " + email));
 
-        List<Cv> cvs = cvRepository.findByStudentId(student.getId());
+        List<Cv> cvs = cvRepository.findByStudentIdAndStatusNotOrderByCreatedAtDesc(student.getId(), Status.DELETE);
 
         return cvs.stream()
                 .map(this::toResponse)
@@ -348,7 +349,7 @@ public class CvServiceImpl implements CvService {
 
     @Override
     public List<CvResponse> getAllCvs() {
-        List<Cv> cvs = cvRepository.findAllByOrderByCreatedAtDesc();
+        List<Cv> cvs = cvRepository.findAllByStatusNotOrderByCreatedAtDesc(Status.DELETE);
 
         return cvs.stream()
                 .map(this::toResponse)
@@ -372,7 +373,15 @@ public class CvServiceImpl implements CvService {
         boolean isCompany = authentication.getAuthorities().stream()
                 .anyMatch(role -> role.getAuthority().equals("ROLE_COMPANY"));
 
+        if (cv.getStatus() == Status.DELETE) {
+            if (isCompany && hasCvAppliedToCurrentCompany(id, email)) {
+                return toResponse(cv);
+            }
+            throw new ResourceNotFoundException("Không tìm thấy CV với ID: " + id);
+        }
+
         if (isCompany) {
+            // TODO: Sau này nên lưu snapshot CV vào đơn ứng tuyển để HR xem đúng bản CV tại thời điểm nộp.
             // Tìm công ty hiện tại dựa trên email đăng nhập
             Company currentCompany = companyRepository.findByUserEmail(email)
                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ công ty"));
@@ -408,14 +417,17 @@ public class CvServiceImpl implements CvService {
                 throw new RuntimeException("Bạn không có quyền xóa CV này");
             }
         }
-        cvRepository.delete(cv);
+        cv.setStatus(Status.DELETE);
+        cv.setIsPublic(false);
+        cv.setApprovedBy(null);
+        cvRepository.save(cv);
     }
 
     @Override
     @Transactional
     public CvResponse approveCv(Long cvId, Status status, String adminNote) {
         //Lấy thông tin CV cần duyệt
-        Cv cv = cvRepository.findById(cvId)
+        Cv cv = cvRepository.findByIdAndStatusNot(cvId, Status.DELETE)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy CV với ID: " + cvId));
 
         // Lấy thông tin Admin đang đăng nhập từ Security Context
@@ -424,6 +436,10 @@ public class CvServiceImpl implements CvService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin Admin thao tác"));
 
         // Cập nhật trạng thái bằng Enum
+        if (status == Status.DELETE) {
+            throw new RuntimeException("Không thể cập nhật CV sang trạng thái DELETE bằng API duyệt");
+        }
+
         cv.setStatus(status);
         String notiType = "";
         String notiTitle = "";
@@ -466,7 +482,7 @@ public class CvServiceImpl implements CvService {
     @Override
     @Transactional
     public CvPreviewResponse previewCv(Long id) {
-        Cv cv = cvRepository.findById(id)
+        Cv cv = cvRepository.findByIdAndStatusNot(id, Status.DELETE)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy CV với ID: " + id));
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -480,7 +496,13 @@ public class CvServiceImpl implements CvService {
             User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> new ResourceNotFoundException("User không tồn tại"));
 
-            if (user.getRole() == RoleType.STUDENT) {
+            if (cv.getStatus() == Status.DELETE) {
+                if (user.getRole() == RoleType.COMPANY && hasCvAppliedToCurrentCompany(id, email)) {
+                    // TODO: Sau này nên render preview từ snapshot CV trong đơn ứng tuyển thay vì đọc CV gốc.
+                } else {
+                    throw new ResourceNotFoundException("Không tìm thấy CV với ID: " + id);
+                }
+            } else if (user.getRole() == RoleType.STUDENT) {
                 if (!cv.getStudent().getUser().getEmail().equals(email)) {
                     // Không phải chủ sở hữu -> Chỉ xem được nếu CV đã public và approved
                     if (!cv.getIsPublic() || cv.getStatus() != Status.APPROVED) {
@@ -488,7 +510,7 @@ public class CvServiceImpl implements CvService {
                     }
                 }
             } else if (user.getRole() == RoleType.COMPANY) {
-                if (!cv.getIsPublic() || cv.getStatus() != Status.APPROVED) {
+                if (!hasCvAppliedToCurrentCompany(id, email) && (!cv.getIsPublic() || cv.getStatus() != Status.APPROVED)) {
                     throw new RuntimeException("CV này chưa được công khai");
                 }
             }
@@ -575,5 +597,11 @@ public class CvServiceImpl implements CvService {
                 .viewCount(cv.getViewCount())
                 .hasPendingRequest(hasPending)
                 .build();
+    }
+
+    private boolean hasCvAppliedToCurrentCompany(Long cvId, String companyEmail) {
+        Company currentCompany = companyRepository.findByUserEmail(companyEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ công ty"));
+        return jobApplicationRepository.existsByCv_IdAndJobPost_Company_Id(cvId, currentCompany.getId());
     }
 }
