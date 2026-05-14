@@ -48,7 +48,7 @@ public class PaymentServiceImpl implements PaymentService {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project khong ton tai"));
 
-        validateProjectCanBePurchased(project, buyer);
+        validateProjectCanBePurchased(project);
 
         if (projectPurchaseRepository.existsByProjectIdAndUserId(project.getId(), buyer.getId())) {
             throw new RuntimeException("Ban da mua source code cua project nay");
@@ -206,7 +206,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .build();
     }
 
-    private void validateProjectCanBePurchased(Project project, User buyer) {
+    private void validateProjectCanBePurchased(Project project) {
         if (project.getStatus() != ProjectStatus.APPROVED) {
             throw new RuntimeException("Chi duoc mua project da duoc duyet");
         }
@@ -219,10 +219,6 @@ public class PaymentServiceImpl implements PaymentService {
             throw new RuntimeException("Project chua co gia ban hop le");
         }
 
-        User seller = project.getStudent().getUser();
-        if (seller != null && seller.getId().equals(buyer.getId())) {
-            throw new RuntimeException("Khong the mua source code cua chinh minh");
-        }
     }
 
     private void markOrderPaid(Order order, Payment payment) {
