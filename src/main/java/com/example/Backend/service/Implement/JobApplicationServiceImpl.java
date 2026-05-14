@@ -11,6 +11,7 @@ import com.example.Backend.mapper.JobApplicationMapper;
 import com.example.Backend.repository.*;
 import com.example.Backend.service.JobApplicationService;
 import com.example.Backend.service.NotificationService;
+import com.example.Backend.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,7 @@ public class JobApplicationServiceImpl implements JobApplicationService {
     private final JobApplicationMapper applicationMapper;
     private final CompanyRepository companyRepository;
     private final NotificationService notificationService;
+    private final UserService userService;
 
     @Override
     @Transactional
@@ -152,5 +154,12 @@ public class JobApplicationServiceImpl implements JobApplicationService {
         List<JobApplication> applications = applicationRepository.findByJobPostId(jobId);
 
         return applications;
+    }
+
+    @Override
+    @Transactional
+    public List<ApplicantResponse> getApplicationByCompany(String email) {
+        List<JobApplication> applications = applicationRepository.getApplicationByCompany(email);
+        return applicationMapper.toApplicantResponseList(applications);
     }
 }

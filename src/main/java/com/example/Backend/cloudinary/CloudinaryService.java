@@ -37,6 +37,7 @@ public class CloudinaryService {
 
         return (String) uploadResult.get("secure_url");
     }
+
     public String uploadFile(MultipartFile file, String folder, String account) throws IOException {
         if (file == null || file.isEmpty()) {
             return null;
@@ -52,6 +53,7 @@ public class CloudinaryService {
 
         return (String) uploadResult.get("secure_url");
     }
+
     /**
      * Xóa avatar với khả năng chọn account
      * account = "1" hoặc "2"

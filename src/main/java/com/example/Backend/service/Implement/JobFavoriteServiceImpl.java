@@ -33,7 +33,7 @@ public class JobFavoriteServiceImpl implements JobFavoriteService {
     public Object toggleFavorite(Long jobId, String email, String note) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
-
+        
         JobPost job = jobPostRepository.findById(jobId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tin tuyển dụng không tồn tại"));
 

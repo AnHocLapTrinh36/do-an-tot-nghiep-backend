@@ -26,6 +26,7 @@ public interface JobApplicationMapper {
     @Mapping(source = "student.user.email", target = "email")
     @Mapping(source = "cv.title", target = "cvTitle")
     @Mapping(source = "jobPost.title", target = "jobTitle")
+    @Mapping(source = "cv.cvFile.filePath", target = "cvFileUrl")
     ApplicantResponse toApplicantResponse(JobApplication entity);
 
 

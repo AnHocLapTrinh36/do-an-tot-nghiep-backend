@@ -18,4 +18,6 @@ public interface JobApplicationService {
     JobApplicationResponse reviewApplication(Long applicationId, ApplicationReviewRequest request);
 
     List<JobApplication> test(Long jobId);
+
+    List<ApplicantResponse> getApplicationByCompany(String email);
 }

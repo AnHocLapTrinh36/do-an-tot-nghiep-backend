@@ -3,6 +3,7 @@ package com.example.Backend.repository;
 import com.example.Backend.entity.ApplicationStatus;
 import com.example.Backend.entity.JobApplication;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -20,4 +21,9 @@ public interface JobApplicationRepository extends JpaRepository<JobApplication, 
     Integer countByJobPostIdAndStatus(Long jobPostId, ApplicationStatus status);
 
     boolean existsByCv_IdAndJobPost_Company_Id(Long cvId, Long companyId);
+
+    @Query("SELECT a FROM JobApplication a " +
+            "WHERE a.jobPost.company.user.email = :email " +
+            "ORDER BY a.appliedAt DESC")
+    List<JobApplication> getApplicationByCompany(String email);
 }

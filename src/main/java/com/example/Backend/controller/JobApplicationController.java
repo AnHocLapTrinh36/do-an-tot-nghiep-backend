@@ -29,5 +29,5 @@ public class JobApplicationController {
 
         return ResponseEntity.ok(ApiResponse.success("Ứng tuyển thành công!", response));
     }
-
+    
 }

@@ -219,7 +219,6 @@ public class JobPostServiceImp implements JobPostService {
         System.out.println("JD FILE: " + request.getJdFile());
         if (request.getJdFile() != null && !request.getJdFile().isEmpty()) {
             try {
-                // Upload lên thư mục "job_jds" trên Cloudinary với account "1"
                 String fileUrl = cloudinaryService.uploadFile(request.getJdFile(), "job_jds", "2");
                 job.setJdFile(fileUrl);
             } catch (IOException e) {
