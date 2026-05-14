@@ -65,6 +65,7 @@ public class SecurityConfig {
                                 "/api/auth/forgot-password",
                                 "/api/auth/verify",
                                 "/api/auth/verify/**",
+                                "/api/ai/chat",
                                 "/oauth2/**",
                                 "/login/oauth2/code/**",
                                 "/payments/webhook",

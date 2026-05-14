@@ -48,7 +48,7 @@ public class JobApplicationServiceImpl implements JobApplicationService {
         if (job.getEndDay() != null && job.getEndDay().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("Công việc này đã hết hạn ứng tuyển!");
         }
-        Cv cv = cvRepository.findById(request.getCvId())
+        Cv cv = cvRepository.findByIdAndStatusNot(request.getCvId(), Status.DELETE)
                 .orElseThrow(() -> new RuntimeException("CV không tồn tại"));
         if (!cv.getStudent().getId().equals(student.getId())) {
             throw new RuntimeException("Bạn không có quyền sử dụng CV này!");

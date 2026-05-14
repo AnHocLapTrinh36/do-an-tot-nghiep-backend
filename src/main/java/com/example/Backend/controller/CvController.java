@@ -121,6 +121,9 @@ public class CvController {
         if (newStatus == null) {
             throw new IllegalArgumentException("Trạng thái (status) không được để trống!");
         }
+        if (newStatus == Status.DELETE) {
+            throw new IllegalArgumentException("Không thể dùng API duyệt để xóa CV");
+        }
         if (newStatus == Status.REJECTED && (adminNote == null || adminNote.trim().isEmpty())) {
             throw new IllegalArgumentException("Vui lòng nhập lý do từ chối CV (admin_note)!");
         }
