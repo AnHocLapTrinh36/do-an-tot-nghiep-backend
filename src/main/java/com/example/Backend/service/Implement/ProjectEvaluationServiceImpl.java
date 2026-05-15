@@ -155,6 +155,7 @@ public class ProjectEvaluationServiceImpl implements ProjectEvaluationService {
                 .id(evaluation.getId())
                 .projectId(evaluation.getProject().getId())
                 .projectTitle(evaluation.getProject().getTitle())
+                .courseName(evaluation.getProject().getCourse() != null ? evaluation.getProject().getCourse().getName() : null)
                 .teacherId(evaluation.getTeacher().getId())
                 .teacherName(evaluation.getTeacher().getUser().getFullName())
                 .suggestions(evaluation.getSuggestions())

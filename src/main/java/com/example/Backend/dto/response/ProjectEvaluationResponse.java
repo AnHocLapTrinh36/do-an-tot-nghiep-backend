@@ -18,6 +18,9 @@ public class ProjectEvaluationResponse {
     @JsonProperty("project_title")
     private String projectTitle;
 
+    @JsonProperty("course_name")
+    private String courseName;
+
     @JsonProperty("teacher_id")
     private Long teacherId;
 

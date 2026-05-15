@@ -1,5 +1,6 @@
 package com.example.Backend.service.Implement;
 
+import com.example.Backend.dto.request.TeacherUpdateRequest;
 import com.example.Backend.dto.response.TeacherResponse;
 import com.example.Backend.entity.RoleType;
 import com.example.Backend.entity.Teacher;
@@ -37,6 +38,16 @@ public class TeacherServiceImpl implements TeacherService {
     @Override
     public List<TeacherResponse> getAllTeachers() {
         return teacherMapper.toResponseList(teacherRepository.findAll());
+    }
+
+    @Override
+    @Transactional
+    public TeacherResponse updateMyProfile(String email, TeacherUpdateRequest request) {
+        Teacher teacher = teacherRepository.findByUser_Email(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giảng viên"));
+
+        teacher.getUser().setFullName(request.getFullName().trim());
+        return teacherMapper.toResponse(teacherRepository.save(teacher));
     }
 
 //    @Override
