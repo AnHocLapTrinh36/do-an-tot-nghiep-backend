@@ -55,6 +55,9 @@ public class JobApplicationServiceImpl implements JobApplicationService {
         if (!cv.getStudent().getId().equals(student.getId())) {
             throw new RuntimeException("Bạn không có quyền sử dụng CV này!");
         }
+        if (cv.getStatus() != Status.APPROVED) {
+            throw new RuntimeException("CV phải được duyệt mới có thể ứng tuyển!");
+        }
         if (applicationRepository.existsByStudentIdAndJobPostId(student.getId(), jobId)) {
             throw new RuntimeException(" Bạn đã ứng tuyển công việc này rồi!");
         }
