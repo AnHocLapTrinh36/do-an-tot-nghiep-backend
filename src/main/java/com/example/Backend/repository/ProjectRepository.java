@@ -24,7 +24,14 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             Pageable pageable
     );
 
-    List<Project> findByStudent_User_EmailOrderByCreatedAtDesc(String email);
+    @Query("""
+            SELECT p
+            FROM Project p
+            WHERE p.student.user.email = :email
+              AND p.status <> 'CLOSE'
+            ORDER BY p.createdAt DESC
+            """)
+    List<Project> findByStudentEmailAndStatusNotClose(@Param("email") String email);
 
     @Query("""
             SELECT p

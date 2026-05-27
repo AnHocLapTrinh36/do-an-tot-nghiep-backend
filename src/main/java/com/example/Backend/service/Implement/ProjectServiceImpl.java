@@ -283,7 +283,7 @@ public class ProjectServiceImpl implements ProjectService {
     public List<ProjectResponse> getMyProjects() {
         String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         // Truy vấn toàn bộ danh sách đồ án của sinh viên
-        List<Project> myProjects = projectRepository.findByStudent_User_EmailOrderByCreatedAtDesc(currentUserEmail);
+        List<Project> myProjects = projectRepository.findByStudentEmailAndStatusNotClose(currentUserEmail);
 
         return myProjects.stream()
                 .map(projectMapper::toResponse)
