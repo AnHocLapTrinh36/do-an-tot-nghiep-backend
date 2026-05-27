@@ -23,9 +23,10 @@ public class Notification {
     private User user;
 
     private String type;
+    @Column(columnDefinition = "NVARCHAR(255)")
     private String title;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String content;
 
     private boolean isRead = false;

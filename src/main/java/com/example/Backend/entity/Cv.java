@@ -29,10 +29,10 @@ public class Cv {
     @Column(nullable = false)
     private CVType type = CVType.FORM;
 
-    @Column(name = "content_json", columnDefinition = "TEXT")
+    @Column(name = "content_json", columnDefinition = "NVARCHAR(MAX)")
     private String contentJson;
 
-    // Thêm dòng mới:
+    // Trạng thái duyệt của CV
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private Status status = Status.PENDING;
