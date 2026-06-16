@@ -5,6 +5,7 @@ import com.example.Backend.dto.request.ProjectRequest;
 import com.example.Backend.dto.request.ProjectUpdateRequest;
 import com.example.Backend.dto.request.admin.AdminApprovedProject;
 import com.example.Backend.dto.response.ProjectResponse;
+import com.example.Backend.entity.ProjectStatus;
 import com.example.Backend.service.ProjectService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -80,12 +81,12 @@ public class ProjectController {
     @Operation(summary = "Lấy danh sách đồ án (Trang chủ Public)")
     public ApiResponse<Page<ProjectResponse>> getPublicProjects(
             @RequestParam(required = false, name = "title") String title,
-            @RequestParam(required = false, name = "technologyId") Long technologyId,
+            @RequestParam(required = false, name = "technologyIds") List<Long> technologyIds,
             @RequestParam(defaultValue = "0", name = "page") int page,
             @RequestParam(defaultValue = "10", name = "size") int size
     ) {
 
-        Page<ProjectResponse> result = projectService.getPublicProjects(title, technologyId, page, size);
+        Page<ProjectResponse> result = projectService.getPublicProjects(title, technologyIds, page, size);
 
         return ApiResponse.success("Lấy danh sách đồ án thành công", result);
     }
@@ -101,12 +102,15 @@ public class ProjectController {
     }
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Admin lấy toàn bộ đồ án (Ưu tiên PENDING lên đầu)")
+    @Operation(summary = "Admin lấy danh sách đồ án, lọc theo tên sinh viên, MSSV và trạng thái")
     public ApiResponse<Page<ProjectResponse>> getAllProjects(
+            @RequestParam(required = false) String studentName,
+            @RequestParam(required = false) String mssv,
+            @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        Page<ProjectResponse> result = projectService.getAllProjectsForAdmin(page, size);
+        Page<ProjectResponse> result = projectService.getAllProjectsForAdmin(studentName, mssv, parseProjectStatus(status), page, size);
         return ApiResponse.success("Lấy danh sách đồ án cho Admin thành công", result);
     }
 
@@ -117,4 +121,14 @@ public class ProjectController {
         return ApiResponse.success("Lấy chi tiết đồ án thành công", project);
     }
 
+    private ProjectStatus parseProjectStatus(String status) {
+        if (status == null || status.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return ProjectStatus.valueOf(status.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Trạng thái đồ án không hợp lệ: " + status);
+        }
+    }
 }

@@ -23,7 +23,7 @@ public interface CvService {
     ///danh sách cv của student hiện tại
     List<CvResponse> getMyCvs();
     /// danh sách tất cả cv
-    List<CvResponse> getAllCvs();
+    List<CvResponse> getAllCvs(String studentName, String mssv, Status status);
     /// method lấy chi tiết 1 CV
     CvResponse getCvById(Long id);
     void deleteCv(Long id);

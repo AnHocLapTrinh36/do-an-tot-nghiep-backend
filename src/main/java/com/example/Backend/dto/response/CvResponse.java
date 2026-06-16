@@ -13,6 +13,8 @@ public class CvResponse {
     private Long id;
     @JsonProperty("student_id")
     private Long studentId;
+    @JsonProperty("student_name")
+    private String studentName;
     private String title;
     private String type;
     @JsonProperty("content_json")
