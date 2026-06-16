@@ -76,10 +76,14 @@ public class CvController {
     //danh sách tất cả CV (role admin)
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "danh sách tất cả CV (role admin)")
-    public ResponseEntity<List<CvResponse>> getAllCvs() {
-        List<CvResponse> responses = cvService.getAllCvs();
-        return ResponseEntity.ok(responses);
+    @Operation(summary = "Danh sách CV cho admin, lọc theo tên sinh viên, MSSV và trạng thái")
+    public ResponseEntity<ApiResponse<List<CvResponse>>> getAllCvs(
+            @RequestParam(required = false) String studentName,
+            @RequestParam(required = false) String mssv,
+            @RequestParam(required = false) String status
+    ) {
+        List<CvResponse> responses = cvService.getAllCvs(studentName, mssv, parseStatus(status));
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách CV cho Admin thành công", responses));
     }
 
     /// chi tiết 1 cv
@@ -221,5 +225,16 @@ public class CvController {
 
         Page<UnlockRequestResponse> response = cvService.getPendingUnlockRequests(page, size);
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách thành công", response));
+    }
+
+    private Status parseStatus(String status) {
+        if (status == null || status.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return Status.valueOf(status.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Trạng thái CV không hợp lệ: " + status);
+        }
     }
 }

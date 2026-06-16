@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -21,6 +22,23 @@ public interface CvRepository extends JpaRepository<Cv, Long>, JpaSpecificationE
     Optional<Cv> findByIdAndStatusNot(Long id, Status status);
 
     List<Cv> findAllByStatusNotOrderByCreatedAtDesc(Status status);
+
+    @Query(value = """
+            SELECT c.*
+            FROM cvs c
+            JOIN students s ON s.id = c.student_id
+            JOIN users u ON u.id = s.user_id
+            WHERE c.status <> 'DELETE'
+              AND (:status IS NULL OR c.status = :status)
+              AND (:studentName IS NULL OR u.full_name COLLATE SQL_Latin1_General_CP1_CI_AI LIKE CONCAT('%', :studentName, '%') COLLATE SQL_Latin1_General_CP1_CI_AI)
+              AND (:mssv IS NULL OR s.mssv COLLATE SQL_Latin1_General_CP1_CI_AI LIKE CONCAT('%', :mssv, '%') COLLATE SQL_Latin1_General_CP1_CI_AI)
+            ORDER BY c.created_at DESC
+            """, nativeQuery = true)
+    List<Cv> findAllForAdmin(
+            @Param("studentName") String studentName,
+            @Param("mssv") String mssv,
+            @Param("status") String status
+    );
 
     long countByStudentIdAndStatusNot(Long studentId, Status status);
 

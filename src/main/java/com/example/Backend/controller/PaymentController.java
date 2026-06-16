@@ -62,15 +62,15 @@ public class PaymentController {
 //        );
 //    }
 
-//    @GetMapping("/api/payments/purchases/me")
-//    @PreAuthorize("isAuthenticated()")
-//    @Operation(summary = "Xem danh sach project da mua source code")
-//    public ApiResponse<List<ProjectPurchaseResponse>> getMyPurchases(Authentication authentication) {
-//        return ApiResponse.success(
-//                "Lay danh sach project da mua thanh cong",
-//                paymentService.getMyPurchases(authentication.getName())
-//        );
-//    }
+    @GetMapping("/api/payments/purchases/me")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Xem danh sách project đã mua source code")
+    public ApiResponse<List<ProjectPurchaseResponse>> getMyPurchases(Authentication authentication) {
+        return ApiResponse.success(
+                "Lấy danh sách project đã mua thành công",
+                paymentService.getMyPurchases(authentication.getName())
+        );
+    }
 
     @GetMapping("/api/wallets/me")
     @PreAuthorize("hasRole('STUDENT')")

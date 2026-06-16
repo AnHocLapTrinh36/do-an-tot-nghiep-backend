@@ -33,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -268,13 +269,26 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public Page<ProjectResponse> getPublicProjects(String title, Long technologyId, int page, int size) {
+    public Page<ProjectResponse> getPublicProjects(String title, List<Long> technologyIds, int page, int size) {
 
         // Tạo đối tượng Pageable, phân trang và sắp xếp mới nhất lên đầu
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
         // Gọi DB lấy dữ liệu (Chỉ lấy APPROVED)
-        Page<Project> projectPage = projectRepository.findPublicProjects(title, technologyId, pageable);
+        List<Long> filterTechnologyIds = normalizeTechnologyIds(technologyIds);
+
+        Page<Project> projectPage;
+        if (filterTechnologyIds.size() > 1) {
+            projectPage = projectRepository.findPublicProjectsByTechnologyIds(
+                    normalizeFilter(title),
+                    filterTechnologyIds,
+                    filterTechnologyIds.size(),
+                    PageRequest.of(page, size)
+            );
+        } else {
+            Long singleTechnologyId = filterTechnologyIds.isEmpty() ? null : filterTechnologyIds.get(0);
+            projectPage = projectRepository.findPublicProjects(normalizeFilter(title), singleTechnologyId, pageable);
+        }
 
         return projectPage.map(projectMapper::toResponse);
     }
@@ -291,9 +305,14 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public Page<ProjectResponse> getAllProjectsForAdmin(int page, int size) {
+    public Page<ProjectResponse> getAllProjectsForAdmin(String studentName, String mssv, ProjectStatus status, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return projectRepository.findAllProjectsForAdmin(pageable).map(projectMapper::toResponse);
+        return projectRepository.findAllProjectsForAdmin(
+                normalizeFilter(studentName),
+                normalizeFilter(mssv),
+                status != null ? status.name() : null,
+                pageable
+        ).map(projectMapper::toResponse);
     }
 
     @Override
@@ -355,5 +374,18 @@ public class ProjectServiceImpl implements ProjectService {
         return response;
     }
 
+    private String normalizeFilter(String value) {
+        return value == null || value.trim().isEmpty() ? null : value.trim();
+    }
+
+    private List<Long> normalizeTechnologyIds(List<Long> technologyIds) {
+        LinkedHashSet<Long> ids = new LinkedHashSet<>();
+        if (technologyIds != null) {
+            technologyIds.stream()
+                    .filter(id -> id != null)
+                    .forEach(ids::add);
+        }
+        return new ArrayList<>(ids);
+    }
 
 }

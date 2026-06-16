@@ -348,8 +348,12 @@ public class CvServiceImpl implements CvService {
     }
 
     @Override
-    public List<CvResponse> getAllCvs() {
-        List<Cv> cvs = cvRepository.findAllByStatusNotOrderByCreatedAtDesc(Status.DELETE);
+    public List<CvResponse> getAllCvs(String studentName, String mssv, Status status) {
+        List<Cv> cvs = cvRepository.findAllForAdmin(
+                normalizeFilter(studentName),
+                normalizeFilter(mssv),
+                status != null ? status.name() : null
+        );
 
         return cvs.stream()
                 .map(this::toResponse)
@@ -583,6 +587,11 @@ public class CvServiceImpl implements CvService {
         return CvResponse.builder()
                 .id(cv.getId())
                 .studentId(cv.getStudent() != null ? cv.getStudent().getId() : null)
+                .studentName(
+                        cv.getStudent() != null && cv.getStudent().getUser() != null
+                                ? cv.getStudent().getUser().getFullName()
+                                : null
+                )
                 .title(cv.getTitle())
                 .type(cv.getType().name())
                 .contentJson(contentJsonObj)
@@ -603,5 +612,9 @@ public class CvServiceImpl implements CvService {
         Company currentCompany = companyRepository.findByUserEmail(companyEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ công ty"));
         return jobApplicationRepository.existsByCv_IdAndJobPost_Company_Id(cvId, currentCompany.getId());
+    }
+
+    private String normalizeFilter(String value) {
+        return value == null || value.trim().isEmpty() ? null : value.trim();
     }
 }
