@@ -6,6 +6,7 @@ import com.example.Backend.dto.request.StudentUpdateRequest;
 import com.example.Backend.dto.request.admin.AdminUpdateStudentRequest;
 import com.example.Backend.dto.response.JobFavoriteResponse;
 import com.example.Backend.dto.response.JobResponse;
+import com.example.Backend.dto.response.StudentMssvSearchResponse;
 import com.example.Backend.dto.response.StudentResponse;
 import com.example.Backend.entity.JobFavorite;
 import com.example.Backend.repository.JobFavoriteRepository;
@@ -40,6 +41,14 @@ public class StudentController {
         List<StudentResponse> students = studentService.getAllStudents();
 
         return ApiResponse.success("Lấy danh sách sinh viên thành công", students);
+    }
+
+    @GetMapping("/search-mssv")
+    @PreAuthorize("hasRole('STUDENT')")
+    @Operation(summary = "Tìm sinh viên theo MSSV để thêm vào đồ án")
+    public ApiResponse<StudentMssvSearchResponse> searchByMssv(@RequestParam String mssv) {
+        StudentMssvSearchResponse student = studentService.searchByMssv(mssv);
+        return ApiResponse.success("Tìm sinh viên theo MSSV thành công", student);
     }
 
     // Lấy chi tiết theo ID

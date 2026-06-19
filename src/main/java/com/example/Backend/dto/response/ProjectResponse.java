@@ -14,6 +14,8 @@ public class ProjectResponse {
     private Long id;
     @JsonProperty("student_name")
     private String studentName; // Chỉ trả về tên cho gọn
+    @JsonProperty("student_mssv")
+    private String studentMssv;
     @JsonProperty("course_name")
     private String courseName;
     private String title;
@@ -37,6 +39,7 @@ public class ProjectResponse {
     // Trả về danh sách chi tiết thay vì chỉ ID
     private List<TechnologyResponse> technologies;
     private List<ProjectImageResponse> images;
+    private List<ProjectMemberResponse> members;
 
     private LocalDateTime createdAt;
 }

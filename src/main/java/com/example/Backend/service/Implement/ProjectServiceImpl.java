@@ -52,6 +52,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final ProjectPurchaseRepository projectPurchaseRepository;
+    private final ProjectMemberRepository projectMemberRepository;
 
     @Override
     @Transactional
@@ -69,7 +70,9 @@ public class ProjectServiceImpl implements ProjectService {
         }
 
         //Lấy danh sách Technologies từ Database dựa vào IDs truyền lên
-        List<Technology> technologies = technologyRepository.findAllById(request.getTechnologyIds());
+        List<Technology> technologies = request.getTechnologyIds() == null
+                ? List.of()
+                : technologyRepository.findAllById(request.getTechnologyIds());
 
         //Khởi tạo Project
         Project project = Project.builder()
@@ -83,6 +86,8 @@ public class ProjectServiceImpl implements ProjectService {
                 .priceDownload(request.getPriceDownload())
                 .technologies(new HashSet<>(technologies)) // Hibernate tự động Insert vào bảng project_technologies
                 .build();
+
+        syncProjectMembers(project, student, request.getMemberMssvs());
 
         //Xử lý Upload Ảnh qua Cloudinary
         if (request.getImages() != null && !request.getImages().isEmpty()) {
@@ -108,7 +113,7 @@ public class ProjectServiceImpl implements ProjectService {
             notificationService.createNotification(
                     admin.getEmail(),
                     "NEW_PROJECT_SUBMITTED",
-                    "Có đồ án mới được đăng tải",
+                    "Có dự án mới được đăng tải",
                     "Sinh viên " + student.getUser().getFullName() + " vừa đăng dự án: " + savedProject.getTitle()
             );
         }
@@ -124,10 +129,10 @@ public class ProjectServiceImpl implements ProjectService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sinh viên"));
 
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đồ án"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy dự án"));
 
         if (!project.getStudent().getId().equals(student.getId())) {
-            throw new RuntimeException("403 Forbidden: Bạn không có quyền sửa đồ án này");
+            throw new RuntimeException("Bạn không có quyền sửa dự án này");
         }
 
         // business Logic: Reset trạng thái nếu đang APPROVED
@@ -157,7 +162,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         // Validate số lượng ảnh phải đúng 3
         if (retainedCount + newCount != 3) {
-            throw new RuntimeException("Đồ án bắt buộc phải có đúng 3 ảnh minh họa.");
+            throw new RuntimeException("dự án bắt buộc phải có đúng 3 ảnh minh họa.");
         }
 
         //lọc và Xóa các ảnh cũ không nằm trong danh sách "retainedImageIds"
@@ -199,8 +204,8 @@ public class ProjectServiceImpl implements ProjectService {
             notificationService.createNotification(
                     admin.getEmail(),
                     "PROJECT_UPDATED_PENDING",
-                    "Đồ án đã cập nhật - Cần duyệt lại",
-                    "Sinh viên " + student.getUser().getFullName() + " vừa cập nhật đồ án '" + savedProject.getTitle() + "'. Trạng thái đã chuyển về PENDING, vui lòng kiểm tra lại."
+                    "dự án đã cập nhật - Cần duyệt lại",
+                    "Sinh viên " + student.getUser().getFullName() + " vừa cập nhật dự án '" + savedProject.getTitle() + "'. Trạng thái đã chuyển về PENDING, vui lòng kiểm tra lại."
             );
         }
         return projectMapper.toResponse(savedProject);
@@ -216,13 +221,13 @@ public class ProjectServiceImpl implements ProjectService {
                 .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
 
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đồ án để xóa"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy dự án để xóa"));
         if (!isAdmin) {
-            // Trích xuất email của chủ sở hữu đồ án
+            // Trích xuất email của chủ sở hữu dự án
             String ownerEmail = project.getStudent().getUser().getEmail();
 
             if (!ownerEmail.equals(currentUserEmail)) {
-                throw new RuntimeException("403 Forbidden: Bạn không có quyền xóa đồ án của người khác");
+                throw new RuntimeException("Bạn không có quyền xóa dự án của người khác");
             }
         }
 
@@ -236,7 +241,7 @@ public class ProjectServiceImpl implements ProjectService {
     public void updateProjectByAdmin(Long projectId, AdminApprovedProject request) {
 
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đồ án"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy dự án"));
 
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         Admin admin = adminRepository.findByUser_Email(email)
@@ -250,20 +255,20 @@ public class ProjectServiceImpl implements ProjectService {
         }
         projectRepository.save(project);
         if (request.getStatus() == ProjectStatus.APPROVED) {
-            auditLogService.saveLog(admin.getUser().getId(), project.getId(), "Duyệt đồ án");
+            auditLogService.saveLog(admin.getUser().getId(), project.getId(), "Duyệt dự án");
             notificationService.createNotification(
                     project.getStudent().getUser().getEmail(),
                     "PROJECT_APPROVED",
-                    "Đồ án của bạn đã được duyệt",
-                    "Chúc mừng! đồ án" + project.getTitle() + "đã được phê duyệt và sẽ hiẻn thị công khai "
+                    "dự án của bạn đã được duyệt",
+                    "Chúc mừng! dự án" + project.getTitle() + "đã được phê duyệt và sẽ hiẻn thị công khai "
             );
         } else if (request.getStatus() == ProjectStatus.REJECTED) {
-            auditLogService.saveLog(admin.getUser().getId(), project.getId(), "Từ chối đồ án");
+            auditLogService.saveLog(admin.getUser().getId(), project.getId(), "Từ chối dự án");
             notificationService.createNotification(
                     project.getStudent().getUser().getEmail(),
                     "PROJECT_REJECTED",
-                    "Đồ án của bạn đã bị từ chối yêu cầu phê duyệt ",
-                    "Rất tiếc! đồ án" + project.getTitle() + "đã bị từ chối phê duyệt "
+                    "dự án của bạn đã bị từ chối yêu cầu phê duyệt ",
+                    "Rất tiếc! dự án" + project.getTitle() + "đã bị từ chối phê duyệt "
             );
         }
     }
@@ -296,8 +301,8 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public List<ProjectResponse> getMyProjects() {
         String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
-        // Truy vấn toàn bộ danh sách đồ án của sinh viên
-        List<Project> myProjects = projectRepository.findByStudentEmailAndStatusNotClose(currentUserEmail);
+        // Truy vấn toàn bộ danh sách dự án của sinh viên
+        List<Project> myProjects = projectRepository.findByOwnerOrMemberEmailAndStatusNotClose(currentUserEmail);
 
         return myProjects.stream()
                 .map(projectMapper::toResponse)
@@ -318,13 +323,13 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public ProjectResponse getProjectDetail(Long id) {
         Project project = projectRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đồ án"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy dự án"));
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
         if (auth == null || auth instanceof AnonymousAuthenticationToken) {
             if (project.getStatus() != ProjectStatus.APPROVED) {
-                throw new RuntimeException("403 Forbidden: Đồ án này chưa được công khai");
+                throw new RuntimeException(" dự án này chưa được công khai");
             }
 
             project.setViewCount(project.getViewCount() + 1);
@@ -345,6 +350,7 @@ public class ProjectServiceImpl implements ProjectService {
         String ownerEmail = project.getStudent().getUser().getEmail();
 
         boolean isOwner = ownerEmail.equals(currentEmail);
+        boolean isProjectMember = projectMemberRepository.existsByProjectIdAndStudentUserEmail(project.getId(), currentEmail);
 
         boolean isTeacherOfCourse = false;
         if (isTeacher && project.getCourse() != null && project.getCourse().getTeachers() != null) {
@@ -357,8 +363,8 @@ public class ProjectServiceImpl implements ProjectService {
         }
 
         if (project.getStatus() != ProjectStatus.APPROVED) {
-            if (!isAdmin && !isOwner && !isTeacherOfCourse) {
-                throw new RuntimeException("403 Forbidden: Bạn không có quyền xem đồ án này");
+            if (!isAdmin && !isOwner && !isProjectMember && !isTeacherOfCourse) {
+                throw new RuntimeException(" Bạn không có quyền xem dự án này");
             }
         }
 
@@ -386,6 +392,47 @@ public class ProjectServiceImpl implements ProjectService {
                     .forEach(ids::add);
         }
         return new ArrayList<>(ids);
+    }
+
+    private void syncProjectMembers(Project project, Student leader, List<String> memberMssvs) {
+        LinkedHashSet<String> normalizedMssvs = new LinkedHashSet<>();
+        if (memberMssvs == null) {
+            return;
+        }
+
+        for (String mssv : memberMssvs) {
+            if (mssv == null || mssv.trim().isEmpty()) {
+                throw new RuntimeException("MSSV thành viên không được để trống");
+            }
+
+            String normalizedMssv = mssv.trim();
+            if (!normalizedMssvs.add(normalizedMssv)) {
+                throw new RuntimeException("Danh sách thành viên bị trùng MSSV: " + normalizedMssv);
+            }
+        }
+
+        for (String mssv : normalizedMssvs) {
+            if (mssv.equals(leader.getMssv())) {
+                throw new RuntimeException("MSSV " + mssv + " là người tạo project, không thể thêm vào danh sách member");
+            }
+
+            Student member = studentRepository.findByMssv(mssv)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy sinh viên với MSSV: " + mssv));
+
+            boolean alreadyExists = project.getMembers().stream()
+                    .anyMatch(projectMember -> projectMember.getStudent().getId().equals(member.getId()));
+            if (!alreadyExists) {
+                ProjectMember projectMember = ProjectMember.builder()
+                        .student(member)
+                        .role(ProjectMemberRole.MEMBER)
+                        .build();
+                project.addMember(projectMember);
+            }
+        }
+
+        project.getMembers().removeIf(projectMember ->
+                !normalizedMssvs.contains(projectMember.getStudent().getMssv())
+        );
     }
 
 }

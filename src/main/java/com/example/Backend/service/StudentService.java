@@ -3,6 +3,7 @@ package com.example.Backend.service;
 
 import com.example.Backend.dto.request.StudentUpdateRequest;
 import com.example.Backend.dto.request.admin.AdminUpdateStudentRequest;
+import com.example.Backend.dto.response.StudentMssvSearchResponse;
 import com.example.Backend.dto.response.StudentResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,5 +20,6 @@ public interface StudentService {
     StudentResponse adminUpdateStudent(Long id, AdminUpdateStudentRequest request);
     void deleteStudent(Long id);
     StudentResponse getMyProfile(String email);
+    StudentMssvSearchResponse searchByMssv(String mssv);
 
 }
