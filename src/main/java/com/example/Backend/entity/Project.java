@@ -82,6 +82,10 @@ public class Project {
     @Builder.Default
     private Set<ProjectImage> images = new HashSet<>();
 
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private Set<ProjectMember> members = new HashSet<>();
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -94,5 +98,10 @@ public class Project {
     public void addImage(ProjectImage image) {
         images.add(image);
         image.setProject(this);
+    }
+
+    public void addMember(ProjectMember member) {
+        members.add(member);
+        member.setProject(this);
     }
 }

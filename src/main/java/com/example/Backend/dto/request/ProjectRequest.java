@@ -20,6 +20,8 @@ public class ProjectRequest {
     // Gửi mảng ID công nghệ
     private List<Long> technologyIds;
 
+    private List<String> memberMssvs;
+
     // Gửi mảng Link ảnh (Có thể đổi sang MultipartFile nếu bạn muốn upload file trực tiếp)
     private List<MultipartFile> images;
 }

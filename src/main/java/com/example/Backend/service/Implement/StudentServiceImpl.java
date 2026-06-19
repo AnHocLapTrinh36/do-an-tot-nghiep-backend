@@ -3,6 +3,7 @@ package com.example.Backend.service.Implement;
 import com.example.Backend.cloudinary.CloudinaryService;
 import com.example.Backend.dto.request.StudentUpdateRequest;
 import com.example.Backend.dto.request.admin.AdminUpdateStudentRequest;
+import com.example.Backend.dto.response.StudentMssvSearchResponse;
 import com.example.Backend.dto.response.StudentResponse;
 import com.example.Backend.entity.Student;
 import com.example.Backend.entity.User;
@@ -156,5 +157,21 @@ public class StudentServiceImpl implements StudentService {
         Student student = studentRepository.findByUserEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sinh viên với email: " + email));
         return studentMapper.toResponse(student);
+    }
+    @Override
+    public StudentMssvSearchResponse searchByMssv(String mssv) {
+        if (mssv == null || mssv.trim().isEmpty()) {
+            throw new RuntimeException("MSSV không được để trống");
+        }
+
+        String normalizedMssv = mssv.trim();
+        Student student = studentRepository.findByMssv(normalizedMssv)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sinh viên với MSSV: " + normalizedMssv));
+
+        return StudentMssvSearchResponse.builder()
+                .id(student.getId())
+                .mssv(student.getMssv())
+                .fullName(student.getUser().getFullName())
+                .build();
     }
 }

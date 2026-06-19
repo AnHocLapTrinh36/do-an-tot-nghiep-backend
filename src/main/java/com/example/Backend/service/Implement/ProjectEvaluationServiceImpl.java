@@ -119,7 +119,7 @@ public class ProjectEvaluationServiceImpl implements ProjectEvaluationService {
     @Override
     @Transactional(readOnly = true)
     public List<ProjectEvaluationResponse> getEvaluationsForMyProjects(String studentEmail) {
-        return projectEvaluationRepository.findByProjectStudentUserEmailOrderByCreatedAtDesc(studentEmail)
+        return projectEvaluationRepository.findByProjectOwnerOrMemberEmailOrderByCreatedAtDesc(studentEmail)
                 .stream()
                 .map(this::toResponse)
                 .toList();

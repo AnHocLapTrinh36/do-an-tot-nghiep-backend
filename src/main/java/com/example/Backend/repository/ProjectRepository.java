@@ -61,11 +61,17 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     @Query("""
             SELECT p
             FROM Project p
-            WHERE p.student.user.email = :email
+            WHERE (p.student.user.email = :email
+              OR EXISTS (
+                  SELECT 1
+                  FROM ProjectMember pm
+                  WHERE pm.project = p
+                    AND pm.student.user.email = :email
+              ))
               AND p.status <> 'CLOSE'
             ORDER BY p.createdAt DESC
             """)
-    List<Project> findByStudentEmailAndStatusNotClose(@Param("email") String email);
+    List<Project> findByOwnerOrMemberEmailAndStatusNotClose(@Param("email") String email);
 
     @Query("""
             SELECT p
