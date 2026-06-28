@@ -21,9 +21,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProjectController {
     private final ProjectService projectService;
+
     @PostMapping
     @PreAuthorize("hasRole('STUDENT')")
-    @Operation(summary = "Sinh viên tạo/nộp đồ án mới")
+    @Operation(summary = "Sinh viên tạo hoặc nộp đồ án mới")
     public ApiResponse<ProjectResponse> createProject(
             @ModelAttribute ProjectRequest request,
             Authentication authentication
@@ -35,7 +36,7 @@ public class ProjectController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('STUDENT')")
-    @Operation(summary = "Sinh viên cập nhật đồ án của mình")
+    @Operation(summary = "Owner của project cập nhật đồ án")
     public ApiResponse<ProjectResponse> updateProject(
             @PathVariable Long id,
             @ModelAttribute ProjectUpdateRequest request,
@@ -49,14 +50,12 @@ public class ProjectController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('STUDENT', 'ADMIN')")
-    @Operation(summary = "Xóa đồ án (Chủ sở hữu hoặc Admin)")
+    @Operation(summary = "Đóng đồ án (Owner của project hoặc Admin)")
     public ApiResponse<Void> deleteProject(@PathVariable Long id) {
-
-        // Chỉ cần gọi service và truyền ID
         projectService.deleteProject(id);
-
-        return ApiResponse.success("Đồ án đã được đóng (Xóa thành công)");
+        return ApiResponse.success("Đồ án đã được đóng thành công");
     }
+
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Admin duyệt hoặc từ chối đồ án")
@@ -64,7 +63,6 @@ public class ProjectController {
             @PathVariable Long id,
             @RequestBody AdminApprovedProject request
     ) {
-        // Validate dữ liệu gửi lên
         if (request.getStatus() == null) {
             return ApiResponse.error("Trạng thái (status) không được để trống", 400);
         }
@@ -78,28 +76,25 @@ public class ProjectController {
     }
 
     @GetMapping
-    @Operation(summary = "Lấy danh sách đồ án (Trang chủ Public)")
+    @Operation(summary = "Lấy danh sách đồ án public")
     public ApiResponse<Page<ProjectResponse>> getPublicProjects(
             @RequestParam(required = false, name = "title") String title,
             @RequestParam(required = false, name = "technologyIds") List<Long> technologyIds,
             @RequestParam(defaultValue = "0", name = "page") int page,
             @RequestParam(defaultValue = "10", name = "size") int size
     ) {
-
         Page<ProjectResponse> result = projectService.getPublicProjects(title, technologyIds, page, size);
-
         return ApiResponse.success("Lấy danh sách đồ án thành công", result);
     }
 
     @GetMapping("/me/projects")
     @PreAuthorize("hasRole('STUDENT')")
-    @Operation(summary = "Sinh viên xem toàn bộ danh sách đồ án cá nhân")
+    @Operation(summary = "Sinh viên xem toàn bộ danh sách đồ án của mình và các project tham gia")
     public ApiResponse<List<ProjectResponse>> getMyProjects() {
-
         List<ProjectResponse> myProjects = projectService.getMyProjects();
-
         return ApiResponse.success("Lấy danh sách đồ án cá nhân thành công", myProjects);
     }
+
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Admin lấy danh sách đồ án, lọc theo tên sinh viên, MSSV và trạng thái")
@@ -110,12 +105,18 @@ public class ProjectController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        Page<ProjectResponse> result = projectService.getAllProjectsForAdmin(studentName, mssv, parseProjectStatus(status), page, size);
+        Page<ProjectResponse> result = projectService.getAllProjectsForAdmin(
+                studentName,
+                mssv,
+                parseProjectStatus(status),
+                page,
+                size
+        );
         return ApiResponse.success("Lấy danh sách đồ án cho Admin thành công", result);
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Xem chi tiết đồ án (Public/Owner/Admin)")
+    @Operation(summary = "Xem chi tiết đồ án (Public hoặc thành viên project/Admin/Giảng viên phụ trách)")
     public ApiResponse<ProjectResponse> getProjectDetail(@PathVariable Long id) {
         ProjectResponse project = projectService.getProjectDetail(id);
         return ApiResponse.success("Lấy chi tiết đồ án thành công", project);

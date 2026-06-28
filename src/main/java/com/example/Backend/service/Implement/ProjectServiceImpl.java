@@ -2,23 +2,31 @@ package com.example.Backend.service.Implement;
 
 import com.example.Backend.cloudinary.CloudinaryService;
 import com.example.Backend.dto.request.ProjectRequest;
+import com.example.Backend.dto.request.ProjectUpdateRequest;
 import com.example.Backend.dto.request.admin.AdminApprovedProject;
 import com.example.Backend.dto.response.ProjectResponse;
-import com.example.Backend.entity.*;
+import com.example.Backend.entity.Admin;
+import com.example.Backend.entity.Course;
+import com.example.Backend.entity.Project;
+import com.example.Backend.entity.ProjectImage;
+import com.example.Backend.entity.ProjectMember;
+import com.example.Backend.entity.ProjectStatus;
+import com.example.Backend.entity.RoleType;
+import com.example.Backend.entity.Student;
+import com.example.Backend.entity.Technology;
+import com.example.Backend.entity.User;
 import com.example.Backend.mapper.ProjectMapper;
 import com.example.Backend.repository.AdminRepository;
 import com.example.Backend.repository.CourseRepository;
+import com.example.Backend.repository.ProjectMemberRepository;
 import com.example.Backend.repository.ProjectPurchaseRepository;
 import com.example.Backend.repository.ProjectRepository;
 import com.example.Backend.repository.StudentRepository;
 import com.example.Backend.repository.TechnologyRepository;
 import com.example.Backend.repository.UserRepository;
-import com.example.Backend.repository.*;
 import com.example.Backend.service.AuditLogService;
 import com.example.Backend.service.NotificationService;
 import com.example.Backend.service.ProjectService;
-import com.example.Backend.dto.request.ProjectUpdateRequest;
-import com.example.Backend.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -57,24 +65,19 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional
     public ProjectResponse createProject(ProjectRequest request, String email) {
-
-        // 1. Lấy thông tin Student từ Email
         Student student = studentRepository.findByUser_Email(email)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sinh viên"));
 
-        //Lấy thông tin Course
         Course course = null;
         if (request.getCourseId() != null) {
             course = courseRepository.findById(request.getCourseId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy môn học"));
         }
 
-        //Lấy danh sách Technologies từ Database dựa vào IDs truyền lên
         List<Technology> technologies = request.getTechnologyIds() == null
                 ? List.of()
                 : technologyRepository.findAllById(request.getTechnologyIds());
 
-        //Khởi tạo Project
         Project project = Project.builder()
                 .student(student)
                 .course(course)
@@ -84,29 +87,30 @@ public class ProjectServiceImpl implements ProjectService {
                 .demoUrl(request.getDemoUrl())
                 .priceType(request.getPriceType())
                 .priceDownload(request.getPriceDownload())
-                .technologies(new HashSet<>(technologies)) // Hibernate tự động Insert vào bảng project_technologies
+                .technologies(new HashSet<>(technologies))
                 .build();
 
         syncProjectMembers(project, student, request.getMemberMssvs());
 
-        //Xử lý Upload Ảnh qua Cloudinary
         if (request.getImages() != null && !request.getImages().isEmpty()) {
             try {
-                // Gọi hàm upload nhiều ảnh, lưu vào thư mục "project_images", dùng account "1"
-                List<String> uploadedImageUrls = cloudinaryService.uploadMultipleImages(request.getImages(), "project_images", "1");
+                List<String> uploadedImageUrls = cloudinaryService.uploadMultipleImages(
+                        request.getImages(),
+                        "project_images",
+                        "1"
+                );
 
                 for (String imageUrl : uploadedImageUrls) {
                     ProjectImage image = ProjectImage.builder()
                             .imageUrl(imageUrl)
                             .build();
-                    project.addImage(image); // Cập nhật quan hệ 2 chiều
+                    project.addImage(image);
                 }
             } catch (IOException e) {
                 throw new RuntimeException("Lỗi khi upload ảnh lên Cloudinary: " + e.getMessage());
             }
         }
 
-        // Lưu xuống DB (Hibernate sẽ tự động Insert Project, Project_Images và Project_Technologies)
         Project savedProject = projectRepository.save(project);
         List<User> admins = userRepository.findByRole(RoleType.ADMIN);
         for (User admin : admins) {
@@ -117,14 +121,13 @@ public class ProjectServiceImpl implements ProjectService {
                     "Sinh viên " + student.getUser().getFullName() + " vừa đăng dự án: " + savedProject.getTitle()
             );
         }
-        // Map sang Response trả về
+
         return projectMapper.toResponse(savedProject);
     }
 
     @Override
     @Transactional
     public ProjectResponse updateProject(Long projectId, ProjectUpdateRequest request, String email) {
-
         Student student = studentRepository.findByUser_Email(email)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sinh viên"));
 
@@ -135,12 +138,10 @@ public class ProjectServiceImpl implements ProjectService {
             throw new RuntimeException("Bạn không có quyền sửa dự án này");
         }
 
-        // business Logic: Reset trạng thái nếu đang APPROVED
         if (project.getStatus() == ProjectStatus.APPROVED) {
             project.setStatus(ProjectStatus.PENDING);
         }
 
-        // Cập nhật thông tin cơ bản
         projectMapper.updateProject(request, project);
 
         if (request.getCourseId() != null) {
@@ -149,46 +150,41 @@ public class ProjectServiceImpl implements ProjectService {
             project.setCourse(course);
         }
 
-        //Cập nhật Technologies
         if (request.getTechnologyIds() != null) {
             List<Technology> newTechnologies = technologyRepository.findAllById(request.getTechnologyIds());
             project.getTechnologies().clear();
             project.getTechnologies().addAll(newTechnologies);
         }
 
-        //XỬ LÝ ẢNH (Bắt buộc 3 ảnh)
-        int retainedCount = (request.getRetainedImageIds() != null) ? request.getRetainedImageIds().size() : 0;
-        int newCount = (request.getNewImages() != null) ? request.getNewImages().size() : 0;
+        int retainedCount = request.getRetainedImageIds() != null ? request.getRetainedImageIds().size() : 0;
+        int newCount = request.getNewImages() != null ? request.getNewImages().size() : 0;
 
-        // Validate số lượng ảnh phải đúng 3
         if (retainedCount + newCount != 3) {
-            throw new RuntimeException("dự án bắt buộc phải có đúng 3 ảnh minh họa.");
+            throw new RuntimeException("Dự án bắt buộc phải có đúng 3 ảnh minh họa.");
         }
 
-        //lọc và Xóa các ảnh cũ không nằm trong danh sách "retainedImageIds"
-        // copy ra một list tạm (currentImages)
         List<ProjectImage> currentImages = new ArrayList<>(project.getImages());
 
         for (ProjectImage img : currentImages) {
             if (request.getRetainedImageIds() == null || !request.getRetainedImageIds().contains(img.getId())) {
-                // Xóa file thực tế trên Cloudinary
                 try {
                     String publicId = cloudinaryService.extractPublicId(img.getImageUrl());
                     cloudinaryService.deleteAvatar(publicId, "1");
                 } catch (Exception e) {
                     System.err.println("Lỗi xóa ảnh Cloudinary: " + e.getMessage());
-                    // tiếp tục xóa trong DB dủ Cloudinary lỗi
                 }
 
-                // Xóa record trong DB  orphanRemoval = true trong Entity Project)
                 project.getImages().remove(img);
             }
         }
 
-        //Upload các ảnh mới
         if (request.getNewImages() != null && !request.getNewImages().isEmpty()) {
             try {
-                List<String> uploadedUrls = cloudinaryService.uploadMultipleImages(request.getNewImages(), "project_images", "1");
+                List<String> uploadedUrls = cloudinaryService.uploadMultipleImages(
+                        request.getNewImages(),
+                        "project_images",
+                        "1"
+                );
                 for (String url : uploadedUrls) {
                     project.addImage(ProjectImage.builder().imageUrl(url).build());
                 }
@@ -197,15 +193,16 @@ public class ProjectServiceImpl implements ProjectService {
             }
         }
 
-        //Lưu thay đổi và Map response
         Project savedProject = projectRepository.save(project);
         List<User> admins = userRepository.findByRole(RoleType.ADMIN);
         for (User admin : admins) {
             notificationService.createNotification(
                     admin.getEmail(),
                     "PROJECT_UPDATED_PENDING",
-                    "dự án đã cập nhật - Cần duyệt lại",
-                    "Sinh viên " + student.getUser().getFullName() + " vừa cập nhật dự án '" + savedProject.getTitle() + "'. Trạng thái đã chuyển về PENDING, vui lòng kiểm tra lại."
+                    "Dự án đã cập nhật - cần duyệt lại",
+                    "Sinh viên " + student.getUser().getFullName()
+                            + " vừa cập nhật dự án '" + savedProject.getTitle()
+                            + "'. Trạng thái đã chuyển về PENDING, vui lòng kiểm tra lại."
             );
         }
         return projectMapper.toResponse(savedProject);
@@ -222,16 +219,16 @@ public class ProjectServiceImpl implements ProjectService {
 
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy dự án để xóa"));
-        if (!isAdmin) {
-            // Trích xuất email của chủ sở hữu dự án
-            String ownerEmail = project.getStudent().getUser().getEmail();
 
-            if (!ownerEmail.equals(currentUserEmail)) {
+        if (!isAdmin) {
+            Student student = studentRepository.findByUser_Email(currentUserEmail)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy sinh viên"));
+
+            if (!project.getStudent().getId().equals(student.getId())) {
                 throw new RuntimeException("Bạn không có quyền xóa dự án của người khác");
             }
         }
 
-        // Thực hiện Soft Delete
         project.setStatus(ProjectStatus.CLOSE);
         projectRepository.save(project);
     }
@@ -239,7 +236,6 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional
     public void updateProjectByAdmin(Long projectId, AdminApprovedProject request) {
-
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy dự án"));
 
@@ -254,32 +250,29 @@ public class ProjectServiceImpl implements ProjectService {
             project.setAdminNote(null);
         }
         projectRepository.save(project);
+
         if (request.getStatus() == ProjectStatus.APPROVED) {
             auditLogService.saveLog(admin.getUser().getId(), project.getId(), "Duyệt dự án");
             notificationService.createNotification(
                     project.getStudent().getUser().getEmail(),
                     "PROJECT_APPROVED",
-                    "dự án của bạn đã được duyệt",
-                    "Chúc mừng! dự án" + project.getTitle() + "đã được phê duyệt và sẽ hiẻn thị công khai "
+                    "Dự án của bạn đã được duyệt",
+                    "Chúc mừng! Dự án " + project.getTitle() + " đã được phê duyệt và sẽ hiển thị công khai"
             );
         } else if (request.getStatus() == ProjectStatus.REJECTED) {
             auditLogService.saveLog(admin.getUser().getId(), project.getId(), "Từ chối dự án");
             notificationService.createNotification(
                     project.getStudent().getUser().getEmail(),
                     "PROJECT_REJECTED",
-                    "dự án của bạn đã bị từ chối yêu cầu phê duyệt ",
-                    "Rất tiếc! dự án" + project.getTitle() + "đã bị từ chối phê duyệt "
+                    "Dự án của bạn đã bị từ chối yêu cầu phê duyệt",
+                    "Rất tiếc! Dự án " + project.getTitle() + " đã bị từ chối phê duyệt"
             );
         }
     }
 
     @Override
     public Page<ProjectResponse> getPublicProjects(String title, List<Long> technologyIds, int page, int size) {
-
-        // Tạo đối tượng Pageable, phân trang và sắp xếp mới nhất lên đầu
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-
-        // Gọi DB lấy dữ liệu (Chỉ lấy APPROVED)
         List<Long> filterTechnologyIds = normalizeTechnologyIds(technologyIds);
 
         Page<Project> projectPage;
@@ -301,7 +294,6 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public List<ProjectResponse> getMyProjects() {
         String currentUserEmail = SecurityContextHolder.getContext().getAuthentication().getName();
-        // Truy vấn toàn bộ danh sách dự án của sinh viên
         List<Project> myProjects = projectRepository.findByOwnerOrMemberEmailAndStatusNotClose(currentUserEmail);
 
         return myProjects.stream()
@@ -329,7 +321,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         if (auth == null || auth instanceof AnonymousAuthenticationToken) {
             if (project.getStatus() != ProjectStatus.APPROVED) {
-                throw new RuntimeException(" dự án này chưa được công khai");
+                throw new RuntimeException("Dự án này chưa được công khai");
             }
 
             project.setViewCount(project.getViewCount() + 1);
@@ -348,7 +340,6 @@ public class ProjectServiceImpl implements ProjectService {
                 .anyMatch(a -> a.getAuthority().equals("ROLE_TEACHER"));
 
         String ownerEmail = project.getStudent().getUser().getEmail();
-
         boolean isOwner = ownerEmail.equals(currentEmail);
         boolean isProjectMember = projectMemberRepository.existsByProjectIdAndStudentUserEmail(project.getId(), currentEmail);
 
@@ -356,15 +347,15 @@ public class ProjectServiceImpl implements ProjectService {
         if (isTeacher && project.getCourse() != null && project.getCourse().getTeachers() != null) {
             isTeacherOfCourse = project.getCourse().getTeachers().stream()
                     .anyMatch(teacher ->
-                            teacher.getUser() != null &&
-                                    teacher.getUser().getEmail() != null &&
-                                    teacher.getUser().getEmail().equals(currentEmail)
+                            teacher.getUser() != null
+                                    && teacher.getUser().getEmail() != null
+                                    && teacher.getUser().getEmail().equals(currentEmail)
                     );
         }
 
         if (project.getStatus() != ProjectStatus.APPROVED) {
             if (!isAdmin && !isOwner && !isProjectMember && !isTeacherOfCourse) {
-                throw new RuntimeException(" Bạn không có quyền xem dự án này");
+                throw new RuntimeException("Bạn không có quyền xem dự án này");
             }
         }
 
@@ -394,28 +385,24 @@ public class ProjectServiceImpl implements ProjectService {
         return new ArrayList<>(ids);
     }
 
-    private void syncProjectMembers(Project project, Student leader, List<String> memberMssvs) {
+    private void syncProjectMembers(Project project, Student creator, List<String> memberMssvs) {
         LinkedHashSet<String> normalizedMssvs = new LinkedHashSet<>();
-        if (memberMssvs == null) {
-            return;
-        }
+        normalizedMssvs.add(creator.getMssv());
 
-        for (String mssv : memberMssvs) {
-            if (mssv == null || mssv.trim().isEmpty()) {
-                throw new RuntimeException("MSSV thành viên không được để trống");
-            }
+        if (memberMssvs != null) {
+            for (String mssv : memberMssvs) {
+                if (mssv == null || mssv.trim().isEmpty()) {
+                    throw new RuntimeException("MSSV thành viên không được để trống");
+                }
 
-            String normalizedMssv = mssv.trim();
-            if (!normalizedMssvs.add(normalizedMssv)) {
-                throw new RuntimeException("Danh sách thành viên bị trùng MSSV: " + normalizedMssv);
+                String normalizedMssv = mssv.trim();
+                if (!normalizedMssvs.add(normalizedMssv)) {
+                    throw new RuntimeException("Danh sách thành viên bị trùng MSSV: " + normalizedMssv);
+                }
             }
         }
 
         for (String mssv : normalizedMssvs) {
-            if (mssv.equals(leader.getMssv())) {
-                throw new RuntimeException("MSSV " + mssv + " là người tạo project, không thể thêm vào danh sách member");
-            }
-
             Student member = studentRepository.findByMssv(mssv)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy sinh viên với MSSV: " + mssv));
 
@@ -424,7 +411,6 @@ public class ProjectServiceImpl implements ProjectService {
             if (!alreadyExists) {
                 ProjectMember projectMember = ProjectMember.builder()
                         .student(member)
-                        .role(ProjectMemberRole.MEMBER)
                         .build();
                 project.addMember(projectMember);
             }
@@ -434,5 +420,4 @@ public class ProjectServiceImpl implements ProjectService {
                 !normalizedMssvs.contains(projectMember.getStudent().getMssv())
         );
     }
-
 }
