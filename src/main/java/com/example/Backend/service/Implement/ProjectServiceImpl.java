@@ -324,8 +324,7 @@ public class ProjectServiceImpl implements ProjectService {
                 throw new RuntimeException("Dự án này chưa được công khai");
             }
 
-            project.setViewCount(project.getViewCount() + 1);
-            projectRepository.save(project);
+            incrementViewCountIfApproved(project);
             ProjectResponse response = projectMapper.toResponse(project);
             response.setIsPurchased(false);
             return response;
@@ -359,8 +358,7 @@ public class ProjectServiceImpl implements ProjectService {
             }
         }
 
-        project.setViewCount(project.getViewCount() + 1);
-        projectRepository.save(project);
+        incrementViewCountIfApproved(project);
 
         ProjectResponse response = projectMapper.toResponse(project);
         boolean isPurchased = userRepository.findByEmail(currentEmail)
@@ -369,6 +367,16 @@ public class ProjectServiceImpl implements ProjectService {
         response.setIsPurchased(isPurchased);
 
         return response;
+    }
+
+    private void incrementViewCountIfApproved(Project project) {
+        if (project.getStatus() != ProjectStatus.APPROVED) {
+            return;
+        }
+
+        int currentViewCount = project.getViewCount() == null ? 0 : project.getViewCount();
+        project.setViewCount(currentViewCount + 1);
+        projectRepository.save(project);
     }
 
     private String normalizeFilter(String value) {

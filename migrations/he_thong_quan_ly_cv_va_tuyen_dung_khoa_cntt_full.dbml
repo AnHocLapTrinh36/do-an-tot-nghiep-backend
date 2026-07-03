@@ -1,0 +1,459 @@
+﻿Project he_thong_quan_ly_cv_va_tuyen_dung_khoa_cntt {
+  database_type: 'MSSQL'
+  Note: '''
+  Hệ thống quản lý CV, đồ án, tuyển dụng cho Khoa Công nghệ Thông tin
+  - Sinh viên: tạo CV, public đồ án
+  - Giảng viên: đánh giá đồ án, recommend sinh viên
+  - Doanh nghiệp: đăng tin tuyển dụng, xem CV/đồ án, yêu cầu truy cập source
+  - Admin: duyệt nội dung, quản lý user, audit log, cấp lại mật khẩu
+
+  Enum giải thích ngắn gọn:
+  - RoleType: STUDENT, TEACHER, ADMIN, COMPANY
+  - CVType: FORM (tạo từ JSON), UPLOAD (upload PDF)
+  - RequestStatus: PENDING, APPROVED, REJECTED
+  - ProjectAccessRequestType: VIEW_SOURCE, DOWNLOAD, COLLABORATION, COMMERCIALIZE
+  - CompanyStatus: PENDING, APPROVED, REJECTED, SUSPENDED
+  '''
+}
+// ====================== ENUMS ======================
+Enum RoleType {
+  STUDENT
+  TEACHER
+  ADMIN
+  COMPANY
+}
+
+Enum CVType {
+  FORM
+  UPLOAD
+}
+
+Enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+Enum ProjectAccessRequestType {
+  VIEW_SOURCE
+  DOWNLOAD
+  COLLABORATION
+  COMMERCIALIZE
+}
+
+Enum CompanyStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+Enum JobStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CLOSE
+}
+
+Enum Provider {
+ LOCAL //các tài khoản từ email + password
+ GOOGLE //các tài khoản từ google
+}
+// ====================== BẢNG CHÍNH ======================
+
+Table Users {
+  id int [pk, increment]
+  email varchar [unique]
+  password varchar
+  full_name varchar
+  provider_id varchar //google sub
+  provider Provider 
+  boolean emailVerified //true / false
+  role RoleType [note: 'Vai trò: STUDENT, TEACHER, ADMIN, COMPANY']
+  is_active boolean [default: true, note: 'Tài khoản có đang hoạt động không']
+  created_at datetime [default: `now()`]
+  Note: 'Bảng người dùng chung (authentication) cho mọi vai trò , provider_id, provider, '
+}
+Table Admins {
+  id int [pk, increment]
+  user_id int [ref: > Users.id, unique, note: 'Quan hệ 1:1 với Users']
+  admin_code varchar [unique, note: 'Mã quản trị']
+  position varchar [note: 'Chức vụ: Trưởng khoa, Phó khoa, Bí thư...']
+  phone varchar
+  Note: 'Quản trị khoa (duyệt CV, job post, quản lý user, cấp lại mật khẩu...)'
+}
+
+Table Students {
+  id int [pk, increment]
+  user_id int [ref: > Users.id, unique, note: 'Quan hệ 1:1 với Users']
+  mssv varchar [unique, note: 'Mã số sinh viên (MSSV)']
+  gpa decimal(3,2) [note: 'Điểm trung bình tích lũy (thảo luận gv) // dong bo csdl tu trường button']
+  avatar_url varchar [note: 'Link ảnh đại diện trên Cloudinary']
+  phone varchar
+  address varchar
+  gender boolean [note: "giới tính"]
+  course varchar [note: "khóa học: 2023-2026"]
+  status varchar [note: "Đang học, Bảo lưu, Tốt nghiệp, Nghỉ học"]
+  created_at datetime [default: `now()`]
+  Note: 'Thông tin chi tiết sinh viên'
+}
+
+Table Teachers {
+  id int [pk, increment]
+  user_id int [ref: > Users.id, unique, note: 'Quan hệ 1:1 với Users']
+  employee_code varchar [unique, note: 'Mã giảng viên']
+  Note: 'Thông tin giảng viên'
+}
+
+
+Table Verification_tokens {
+  id int [pk, increment]
+  token varchar [not null, unique]
+  user_id int [ref: > Users.id]
+  expiry_date datetime [not null]
+}
+
+Table Companies {
+  id int [pk, increment]
+  user_id int [ref: > Users.id, unique, note: 'Quan hệ 1:1 với Users']
+  company_name varchar [not null]
+  tax_code varchar [unique, note: 'Mã số thuế validated : 10 - 13 số']
+  website varchar
+  address varchar
+  avatar_url varchar
+  description text
+  phone varchar
+  location string
+  status CompanyStatus [default: 'PENDING', note: 'PENDING → chờ duyệt']
+  verified_at datetime
+  verified_by int [ref: > Admins.id, note: 'Admin nào duyệt công ty']
+  is_verified boolean [default: false]
+  created_at datetime
+  Note: 'Doanh nghiệp / Nhà tuyển dụng (đăng tin tuyển dụng, xem CV/đồ án public)'
+}
+
+// ====================== CV & ĐỒ ÁN ======================
+
+Table CVs {
+  id long [pk, increment]
+  student_id long [ref: > Students.id]
+  title varchar [note: 'Tên CV (ví dụ: CV Fresher React 2026)']
+  type CVType [note: 'FORM: tạo từ form | UPLOAD: upload PDF']
+  content_json text [note: 'Dữ liệu JSON nếu type = FORM']
+  is_public boolean [default: false, note: 'Công khai cho doanh nghiệp xem']
+  status Status [default: "PENDING", note: 'Đã được admin duyệt chưa']
+  approved_by int [ref: > Admins.id, note: 'Admin duyệt']
+  view_count int [default: 0]
+  download_count int [default: 0]
+  admin_note nvarchar 
+  created_at datetime
+  updated_at datetime
+  Note: 'CV của sinh viên (có thể tạo nhiều CV) - max-2 cv/student'
+    
+}
+Table CV_Files {
+  id int [pk, increment]
+  cv_id int [ref: > CVs.id]
+  file_name varchar [note: 'Tên file gốc sinh viên upload']
+  file_path varchar [note: 'Đường dẫn lưu trữ (Cloudinary/S3)']
+  file_size int
+  uploaded_at datetime
+  Note: 'File đính kèm CV (thường là PDF upload)'
+}
+Table Projects {
+  id int [pk, increment]
+  student_id int [ref: > Students.id]
+  course_id int [ref: > Courses.id, note: 'Liên kết với môn học']
+  title varchar [note: 'Tên đề tài']
+  description text
+  source_code_url varchar [note: 'Link GitHub source code']
+  demo_url varchar [note: 'Link youtobe demo dự án']
+  view_count int [default: 0]
+  download_count int [default: 0]
+  status enum [note: 'pending | approved | rejected']
+  price_type enum [note: 'free | paid']
+  price_download decimal
+  created_at datetime
+  updated_at datetime
+  Note: 'Đồ án / dự án của sinh viên'
+}
+Table Technologies {
+  id int [pk, increment]
+  name varchar [not null, note: 'Admin tự nhập sẵn: React, Laravel, Spring Boot...']
+  icon_url varchar [note: 'Để rỗng cũng được']
+}
+Table Project_Images {
+  id int [pk, increment]
+  project_id int [not null, ref: > Projects.id]
+  image_url varchar [not null]
+  created_at datetime
+}
+Table Project_Members {
+  id long [pk, increment]
+  project_id long [ref: > Projects.id]
+  student_id long [ref: > Students.id]
+  created_at datetime
+  Indexes {
+    (project_id, student_id) [unique, name: 'uk_project_member_project_student']
+  }
+  Note: 'Thành viên tham gia dự án, đảm bảo một sinh viên không bị thêm trùng trong cùng một đồ án'
+}
+
+Table Project_Comments {
+  id long [pk, increment]
+  project_id long [ref: > Projects.id]
+  user_id long [ref: > Users.id]
+  content text [note: 'Nội dung bình luận của người dùng trên đồ án']
+  created_at datetime
+  updated_at datetime
+  Note: 'Bình luận của người dùng trên đồ án'
+}
+Table Project_Technologies {
+  project_id int [ref: > Projects.id]
+  technology_id int [ref: > Technologies.id]
+  
+  indexes {
+    (project_id, technology_id) [pk] // Đảm bảo không add trùng 1 công nghệ 2 lần cho 1 đồ án
+  }
+}
+
+Table Job_Posts {
+  id int [pk, increment]
+  company_id int [ref: > Companies.id]
+  title varchar [note: 'Vị trí tuyển dụng (ví dụ: Fresher React Developer)']
+  description text
+  requirements text [note: 'Yêu cầu kỹ năng, kinh nghiệm...']
+  jd_file varchar [note: 'File mô tả công việc (PDF)']
+  posted_at datetime
+  status JobStatus [default: false, note: 'Admin duyệt tin tuyển dụng // status']
+  approved_by int [ref: > Users.id]
+  approved_at datetime
+  start_day datetime
+  end_day datetime
+  view_count int [default: 0]
+  applied_count int [default: 0]
+  salary decimal
+  job_type varchar [note: 'Loại hình: FULL_TIME, PART_TIME, INTERNSHIP, REMOTE...']
+  work_location varchar [note: 'TP HCM, ĐÀ NẴNG,....']
+  Note: 'Tin tuyển dụng do doanh nghiệp đăng'
+}
+
+Table Job_Applications {
+  id int [pk, increment]
+  student_id int [ref: > Students.id]
+  job_post_id int [ref: > Job_Posts.id]
+  cv_id int [ref: > CVs.id, note: 'CV mà sinh viên chọn để nộp cho job này']
+  status enum [note: 'PENDING → chờ công ty xem | APPROVED → chấp nhận / hẹn PV | REJECTED → từ chối']
+  applied_at datetime [default: `now()`]
+  processed_by int [ref: > Companies.id] 
+  company_note text [note: 'Ghi chú nội bộ của công ty về ứng viên']
+  Indexes {
+    (student_id, job_post_id) [unique, name: 'unique_student_job_application']
+  }
+  Note: 'Sinh viên nộp đơn ứng tuyển cho 1 job post (chọn CV cụ thể). Trạng thái theo dõi toàn bộ quá trình.'
+}
+///Tâm làm
+Table Project_Evaluations {
+  id int [pk, increment]
+  project_id int [ref: > Projects.id]
+  teacher_id int [ref: > Teachers.id]
+  suggestions text [note: 'Gợi ý cải thiện cụ thể cho sinh viên']
+  created_at datetime
+  Note: 'Đánh giá đồ án bởi giảng viên'
+}
+
+// ====================== MÔN HỌC & GIẢNG VIÊN PHỤ TRÁCH ======================
+
+Table Courses {
+  id int [pk, increment]
+  // course_code varchar [unique, note: 'Mã môn học']
+  name varchar [note: 'Tên môn học']
+  // semester varchar [note: 'Học kỳ: HK1 2025']
+  // academic_year varchar [note: 'Năm học: 2025-2026']
+  // credits int [note: 'Số tín chỉ']
+  Note: 'Danh sách môn học'
+}
+
+Table Course_Teachers {
+  course_id int [ref: > Courses.id]
+  teacher_id int [ref: > Teachers.id]
+  Indexes {
+    (course_id, teacher_id) [pk, name: 'pk_course_teacher']
+  }
+  Note: 'Quan hệ N:N - Giảng viên phụ trách môn học'
+}
+
+// ====================== TUYỂN DỤNG & RECOMMEND ======================
+
+
+
+
+// Table Teacher_Student_Recommendations {
+//   id int [pk, increment]
+//   teacher_id int [ref: > Teachers.id]
+//   student_id int [ref: > Students.id]
+//   job_post_id int [ref: > Job_Posts.id, note: 'Null nếu recommend chung']
+//   reason text [note: 'Lý do giảng viên đề xuất sinh viên này (thảo luận gv)']
+//   created_at datetime 
+//   Note: 'Giảng viên trợ đề xuất sinh viên cho vị trí tuyển dụng'
+// }
+
+// ====================== YÊU CẦU TRUY CẬP & QUẢN LÝ ======================
+//admin hay sinh viên
+/// công gửi y/c hợp tác - Tâm làm
+Table Project_Access_Requests {
+  id int [pk, increment]
+  company_id int [ref: > Companies.id]
+  project_id int [ref: > Projects.id]
+  reason text [not null, note: 'Lý do yêu cầu truy cập']
+  // proposed_value text [note: 'Đề xuất lợi ích cho sinh viên/khoa']
+  status Status [default: 'PENDING', note: 'PENDDNING, APPROVED, REJECTED']
+  requested_at datetime [default: `now()`]
+  // processed_at datetime
+  // processed_by int [ref: > Users.id, note: 'Admin hoặc GV xử lý']
+  approval_note text [note: 'Ghi chú khi duyệt/từ chối']
+  Note: 'Doanh nghiệp yêu cầu xem source code, download, hợp tác...'
+}
+
+Table CV_Update_Requests {
+  id int [pk, increment]
+  cv_id int [ref: > CVs.id]
+  student_id int [ref: > Students.id]
+  reason text [not null, note: 'Lý do muốn chỉnh sửa CV đã duyệt']
+  status RequestStatus [default: 'PENDING']
+  requested_at datetime [default: `now()`]
+  admin_note text [note: 'Ghi chú duyệt/từ chối (bàn gv)']
+  Note: 'Yêu cầu cập nhật CV đã được phê duyệt (bắt buộc qua ticket)'
+}
+
+// ====================== NOTIFICATION & AUDIT ======================
+
+Table Notifications {
+  id int [pk, increment]
+  user_id int [ref: > Users.id]
+  type varchar [note: 'Loại: CV_APPROVED, PROJECT_EVALUATED, JOB_APPROVED...']
+  title varchar
+  content text
+  sent_at datetime
+  Note: 'Thông báo cho người dùng'
+}
+
+// log admin (log thao tác admin)
+Table Audit_Logs {
+  id int [pk, increment]
+  user_id int [ref: > Users.id, note: 'Người thực hiện hành động']
+  // role varchar(20) [note: 'Vai trò lúc thực hiện (STUDENT, TEACHER...)']
+  target_id int [not null, note: 'ID bản ghi bị tác động']
+  created_at datetime [default: `now()`]
+  Note: 'Lịch sử thao tác toàn hệ thống (dùng cho báo cáo admin)'
+}
+
+
+
+//Tâm làm
+Table Project_Favorites {
+  id int [pk, increment]
+  user_id int [ref: > Users.id]
+  project_id int [ref: > Projects.id]
+  created_at datetime [default: `now()`]
+  Indexes {
+    (user_id, project_id) [unique, name: 'unique_user_project']
+  }
+  Note: 'Danh sách dự án yêu thích của user COMPANY, STUDENT đều dùng được)'
+}
+
+
+Table Job_Favorites {
+  id int [pk, increment]
+  user_id int [ref: > Users.id]
+  post_id int [ref: > Job_Posts.id]
+  created_at datetime [default: `now()`]
+  note text [note: 'Ghi chú cá nhân, ví dụ: "Phù hợp fresher React, lương 10-15tr", "Ưu tiên remote"']
+  Note: 'Danh sách tin tuyển dụng yêu thích của sinh viên'
+}
+
+// ví nội bộ (escrow + available balance)
+//Giữ tiền 3–7 ngày để buyer khiếu nại nếu source không đúng mô tả, lỗi nghiêm trọng, không chạy được...
+Table Wallets {
+  id int [pk, increment]
+  user_id int [ref: > Users.id, unique]   // 1 user = 1 wallet
+  total_balance decimal(15,2) [default: 0]     // tổng tiền đang giữ (pending + available)
+  available_balance decimal(15,2) [default: 0] // tiền có thể rút
+  updated_at datetime
+  Note: 'Ví nội bộ của user chủ yếu seller sinh viên'
+}
+// Yêu cầu rút tiền
+//
+Table Withdrawals {
+  id int [pk, increment]
+  user_id int [ref: > Users.id]
+  
+  wallet_id int [ref: > Wallets.id]
+  amount decimal(15,2)
+  bank_account_id int [ref: > Bank_Accounts.id, note: 'Tài khoản ngân hàng seller đã lưu']
+  status enum [note:'PENDING,COMPLETED, REJECTED']
+  admin_note text
+  requested_at datetime
+  processed_by int [ref: > Users.id]  // admin nào xử lý
+}
+Table Bank_Accounts {
+  id int [pk, increment]
+  user_id int [ref: > Users.id]
+  bank_name varchar      // Vietcombank, Techcombank, MB...
+  account_number varchar
+  // account_holder varchar
+  // branch varchar
+  // is_default boolean [default: false]
+  // verified boolean [default: false]
+  created_at datetime
+}
+Table Payments {
+  id int [pk, increment]
+  project_id int [ref: > Projects.id]
+  buyer_id int [ref: > Users.id, note: 'Ai mua/download (có thể COMPANY, TEACHER, ADMIN, thậm chí STUDENT khác)']
+  price decimal(12,2) [note: 'Số tiền thực tế thanh toán (VND)']
+  status PaymentStatus [default: 'PENDING']
+  download_link varchar [note: 'Link github']
+  Note: 'Giao dịch mua/download source code có phí. Tăng download_count sau success'
+}
+
+/// phần thanh toán sẽ phát sinh ra bản này
+Table Project_Purchases {
+  id int [pk, increment]
+  project_id int [ref: > Projects.id]
+  user_id int [ref: > Users.id]
+  Indexes {
+    (project_id, user_id) [unique, name: 'unique_project_user_purchase']
+  }
+  Note: "Mua src code mới dc đánh giá"
+}
+
+Enum OrderStatus {
+  PENDING
+  PAID
+  CANCELLED
+  EXPIRED
+  FAILED
+}
+
+Enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+}
+
+Table Orders {
+  id int [pk, increment]
+  order_code bigint [unique, not null, note: 'Mã đơn gửi sang payOS để đối chiếu webhook']
+  buyer_id int [ref: > Users.id, not null, note: 'Người mua source code']
+  project_id int [ref: > Projects.id, not null, note: 'Dự án được mua']
+  price decimal(12,2) [not null, note: 'Giá mua tại thời điểm tạo đơn']
+  status OrderStatus [default: 'PENDING']
+  created_at datetime [default: `now()`]
+  updated_at datetime
+}
+
+
+
+
+
+Ref: "Companies"."description" < "Job_Posts"."description"
