@@ -9,6 +9,7 @@ import com.example.Backend.entity.*;
 import com.example.Backend.exception.ResourceNotFoundException;
 import com.example.Backend.mapper.JobApplicationMapper;
 import com.example.Backend.repository.*;
+import com.example.Backend.service.EmailService;
 import com.example.Backend.service.JobApplicationService;
 import com.example.Backend.service.NotificationService;
 import com.example.Backend.service.UserService;
@@ -32,6 +33,7 @@ public class JobApplicationServiceImpl implements JobApplicationService {
     private final CompanyRepository companyRepository;
     private final NotificationService notificationService;
     private final UserService userService;
+    private final EmailService emailService;
 
     @Override
     @Transactional
@@ -137,6 +139,14 @@ public class JobApplicationServiceImpl implements JobApplicationService {
                 type,
                 title,
                 content
+        );
+
+        emailService.sendApplicationReviewEmail(
+                app.getStudent().getUser(),
+                app.getJobPost().getCompany().getCompanyName(),
+                app.getJobPost().getTitle(),
+                statusStr,
+                request.getCompanyNote()
         );
 
         return applicationMapper.toResponse(saved);

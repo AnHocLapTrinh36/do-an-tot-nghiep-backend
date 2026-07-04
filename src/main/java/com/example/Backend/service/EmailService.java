@@ -7,5 +7,6 @@ import org.springframework.stereotype.Service;
 public interface EmailService {
     void sendVerificationEmail(User user);
     void sendForgotPasswordEmail(User user, String newPassword);
+    void sendApplicationReviewEmail(User user, String companyName, String jobTitle, String status, String companyNote);
 
 }
